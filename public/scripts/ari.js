@@ -12,14 +12,15 @@
     const FINISHING_CHAT_INACTIVITY_MESSAGES = ["Avisame cualquier cosa, yo siempre estoy aqui para cualquier consulta que tengas.", "Cuando tengas tiempo seguimos hablando!"];
     // Todos los tiempos se encuentran en valor milisegundos
 
-    const INTERVAL_AWAIT_RESPONSE = 48000;
-    const INTERVAL_FINISH_ACTIVITY = 60000;
-    const INTERVAL_POST_FINISH_DELAY = 4000;
+    // const INTERVAL_AWAIT_RESPONSE = 48000;
+    // const INTERVAL_FINISH_ACTIVITY = 60000;
+    // const INTERVAL_POST_FINISH_DELAY = 4000;
 
     // Variables que se utilizaran como recursos publicos
     var chat_msg_usuario;
     var chat_msg_bot;
     var chat_msg_option;
+    var chat_msg_file;
 
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
     var pending_delivering_messages = [];
@@ -53,6 +54,7 @@
         chat_msg_usuario = div_chat_ari.querySelector(".chat-msg.usuario");
         chat_msg_bot = div_chat_ari.querySelector(".chat-msg.bot");
         chat_msg_option = div_chat_ari.querySelector(".chat-msg.option");
+        chat_msg_file = div_chat_ari.querySelector(".chat-msg.file");
 
         // Validamos el input prohibiendo pegar y los caracteres (<->)
         input.addEventListener('keydown', (event) => {
@@ -135,7 +137,12 @@
             var message = pending_delivering_messages[0];
             // Removemos el elemento del arreglo
             pending_delivering_messages.shift();
+            // De momento, dejamos asi, PERO no deberia estar asi jeje
             setTimeout(function() {
+                console.log(message.text);
+                if (message.text == "taca taca") {
+                    message.type = "file";
+                }
                 // definimos el tipo de mensaje a ejecutar
                 switch (message.type) {
                     case "text":
@@ -143,6 +150,10 @@
                         break;
                     case "option":
                         generate_message(message, "option");
+                        break;
+                    case "file":
+                        console.log(message.type);
+                        generate_message(message.text, "file");
                         break;
                 };
                 if (resetChat == true) {
@@ -240,8 +251,14 @@
         }
         if (option_value == "otherOp") {
             var input = document.querySelector("#chat-input");
-            input.style.cursor = "deafult";
+            input.style.cursor = "default";
             return generate_message("Indicame que otra consulta tenes", "bot");
+        }
+
+        if (option_value == "otherOpFile") {
+            var input = document.querySelector("#chat-input");
+            input.style.cursor = "default";
+            return generate_message("Cancelamos la carga del archivo. Indicame que otra consulta tenes", "bot");
         }
         // Validamos si existe el contexto
         let inpContext = document.querySelector(CONTEXT_DATA);
@@ -375,7 +392,7 @@
     }
 
     var click_option = function(e) {
-        if (e.target.valueText == "otherOp") {
+        if (e.target.valueText == "otherOp" || e.target.valueText == "otherOpFile") {
             var contexto = document.querySelector(CONTEXT_DATA);
             document.body.removeChild(contexto);
         }
@@ -422,6 +439,17 @@
             loader.setAttribute("style", "display:none");
             plane.style.display = "block";
         }
+
+        if (type == "file") {
+            // Si el mensaje es de tipo opcion, sacamos el foco del input
+            $("#chat-input").blur();
+            $("#chat-submit").prop('disabled', true);
+            $("#chat-input").prop('disabled', true);
+            generate_message_file(msg);
+            loader.setAttribute("style", "display:none");
+            plane.style.display = "block";
+        }
+
         // Siempre hacemos focus sobre el input al recibir un mensaje
         $("#chat-input").focus();
 
@@ -429,7 +457,7 @@
             scrollTop: $(".chat-logs")[0].scrollHeight
         }, 1000);
 
-        if (type == 'bot' || type == 'option') {
+        if (type == 'bot' || type == 'option' || type == 'file') {
             send_stacked_messages();
         }
 
@@ -529,6 +557,27 @@
 
         disable_options(options);
         disable_optionsInput(options);
+        currentMessage.id = "cm-msg-" + indice;
+        chat_logs.appendChild(currentMessage);
+    }
+
+    var generate_message_file = function(message) {
+        var chat_logs = document.querySelector(".chat-logs");
+        var currentMessage = chat_msg_file.cloneNode(true);
+        var response = currentMessage.querySelector("#response");
+        var description = currentMessage.querySelector("#description");
+        var inputButton = currentMessage.querySelector("#upload");
+        var input = document.querySelector("#chat-input");
+        var submit = document.querySelector("#chat-submit");
+
+        // Cambiamos el estilo del text box cuando ingresa un mensaje de tipo file
+        input.style.cursor = "no-drop";
+        input.classList.add('disabled-input');
+        submit.style.color = "lightgrey";
+
+        response.innerHTML = "Por favor, adjuntá un archivo"
+        description.innerHTML = "Click en examinar para adjuntarlo:"
+
         currentMessage.id = "cm-msg-" + indice;
         chat_logs.appendChild(currentMessage);
     }
