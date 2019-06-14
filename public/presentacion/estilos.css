@@ -1,0 +1,143 @@
+@font-face {
+    font-family: centuryGothic;
+    src: url(GOTHIC.TTF);
+}
+
+body {
+    height: 100vh !important;
+    width: 100vw !important;
+    background-image: url(Recurso1.png);
+    background-position: fixed;
+    background-size: cover;
+    background-repeat: no-repeat;
+    overflow: hidden !important;
+}
+
+#wrapper-container1 {
+    max-width: 500px;
+    margin-top: 5em;
+}
+
+#texto-welcome {
+    font-family: centuryGothic, Calibri !important;
+    color: white;
+    font-size: 1.5em;
+}
+
+.error-hidden {
+    font-family: centuryGothic, Calibri !important;
+    color: white;
+    font-size: 1em;
+    display: none;
+}
+
+.pulsate {
+    font-family: centuryGothic, Calibri !important;
+    color: white;
+    font-size: 1em;
+    display: block;
+    -webkit-animation: pulsate 3s infinite ease-out;
+    -moz-animation: pulsate 3s infinite ease-out;
+    -o-animation: pulsate 3s infinite ease-out;
+    animation: pulsate 3s infinite ease-out;
+    opacity: 0.5;
+}
+
+@keyframes pulsate {
+    0% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1.0;
+    }
+    100% {
+        opacity: 0.5;
+    }
+}
+
+#logo-mega {
+    max-width: 350px !important;
+}
+
+#form1 {
+    position: relative;
+    margin: 50px auto;
+    max-width: 400px;
+}
+
+.form-group {
+    margin-top: 0px !important;
+}
+
+.input-logeo:focus {
+    border: 1px solid #c8591d !important;
+    box-shadow: none;
+    /* box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(126, 239, 104, 0.6); */
+    outline: 0 none;
+}
+
+input,
+textarea {
+    margin: 0 0 0px 0;
+    padding: 12px 5%;
+    width: 90%;
+    border: 0;
+    border-radius: 4px;
+    background-color: #FFFFFF;
+    color: rgb(172, 172, 172);
+    font-size: 20px;
+    font-family: 'Helvetica Neue', sans-serif;
+}
+
+::-webkit-input-placeholder {
+    color: rgb(190, 188, 188);
+    font-style: italic;
+}
+
+input:-moz-placeholder,
+textarea:-moz-placeholder {
+    color: rgb(190, 188, 188);
+    font-style: italic;
+}
+
+input[type="checkbox"] {
+    margin-right: 5px;
+    width: auto;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.btn {
+    overflow: hidden;
+    margin-top: 10px;
+    padding: 14px 5%;
+    width: 90%;
+    border: 0;
+    border-radius: 4px;
+    background-color: #c8591d;
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 20px;
+    font-family: 'Helvetica Neue', sans-serif;
+    cursor: pointer;
+}
+
+.btn:hover {
+    transition: 500ms !important;
+    background-color: #000000 !important;
+}
+
+.btn:active,
+.btn:focus {
+    border: 1px solid #c8591d !important;
+    box-shadow: none;
+    /* box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(126, 239, 104, 0.6); */
+    outline: 0 none;
+}
+
+label {
+    /* display: block; */
+    margin-bottom: 5px;
+    color: #fff;
+    font-weight: normal;
+}
