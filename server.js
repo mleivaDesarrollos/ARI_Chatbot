@@ -16,6 +16,16 @@ var multer = require('multer');
 // instanciamos la libreria
 var upload = multer();
 
+// Configuracion de MULTER
+var storage = multer.diskStorage({
+    destination: function(req, file, callback) {
+        callback(null, './uploads');
+    },
+    filename: function(req, file, callback) {          
+        callback(null, file.originalname);         
+    }    
+});
+
 /*  LIBRERIAS AUTHENTICATION  */
 var ad = require('activedirectory');
 var session = require('express-session');
@@ -42,7 +52,6 @@ const PUBLIC_URL = "url.com";
 // Hacemos que express considere las librerias middleware bodyparser y multer para su funcionamiento
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(upload.array());
 // ... sumamos cookie y session para manejar el auth
 app.use(cookie());
 app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: false }));
@@ -133,7 +142,16 @@ app.post('/send', (req, res) => {
             res.json(messageFromBot);
         });
     })
-    // Lanzamos la escucha sobre el puerto indicado
 
+    app.post('/upload', (req,res) => { 
+        let upload = multer({storage: storage});
+        upload.array("upload_file[]")(req,res, function(err) { 
+            console.log(req.files)    
+        });
+
+    });
+
+
+// Lanzamos la escucha sobre el puerto indicado
 server.listen(PORT_STANDARD);
 servers.listen(PORT_SECURE);

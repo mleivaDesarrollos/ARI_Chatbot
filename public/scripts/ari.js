@@ -399,6 +399,23 @@
         send_message_api(e.target.displayText, e.target.valueText);
     }
 
+
+    let uploadFile = function(files) {
+        let formData = new FormData();
+        for(let i=0; i < files.length; i++){
+            formData.append("upload_file[]", files[i]);
+        }            
+        //console.log(formData);
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', '/upload');
+        xhr.addEventListener('load', () => {
+            if(xhr.status == 200) {
+                console.log("Subida correcta");
+            }
+        })
+        xhr.send(formData);
+    }
+
     var generate_message = function(msg, type) {
         var conversation_starting = indice > 1;
         var plane = document.querySelector("#plane");
@@ -570,6 +587,13 @@
         var input = document.querySelector("#chat-input");
         var submit = document.querySelector("#chat-submit");
 
+        // Verificamos si algo cambia en el input
+
+        inputButton.addEventListener('change', e => {
+            let files = e.target.files;
+            uploadFile(files);          
+        });
+
         // Cambiamos el estilo del text box cuando ingresa un mensaje de tipo file
         input.style.cursor = "no-drop";
         input.classList.add('disabled-input');
@@ -581,4 +605,5 @@
         currentMessage.id = "cm-msg-" + indice;
         chat_logs.appendChild(currentMessage);
     }
+
 }());

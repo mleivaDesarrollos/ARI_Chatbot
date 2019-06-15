@@ -145,6 +145,23 @@ input[type="color"]:focus,
     text-decoration: initial!important
 }
 
+.cm-msg-text-file {
+    background: #f3f3f3;
+    padding: 10px 15px;
+    color: #666;
+    max-width: 100%;
+    float: left;
+    margin-left: 2px;
+    position: relative;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+    border-left-style: solid;
+    border-left-color: #00b4c5;
+    text-decoration: initial!important
+}
+
 .chat-msg {
     clear: both
 }
