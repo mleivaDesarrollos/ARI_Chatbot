@@ -485,12 +485,14 @@
         });
 
         // Cuando el archivo finaliza cambiamos el estilo del progress    
-        xhr.open('POST', '/upload');
+        xhr.open('POST', '/upload_documents');
         xhr.addEventListener('load', () => {
-            if(xhr.status == 200) {
+            if(xhr.status == 200 && xhr.readyState == 4) {
+                console.log("Subida correcta");
+                setTimeout(function() {
                 progressBar.classList.remove("bg-info");
                 progressBar.classList.add("bg-success");
-                console.log("Subida correcta");
+            },1000);
             }
         })
         xhr.send(formData);

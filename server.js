@@ -3,8 +3,7 @@
 var express = require('express');
 // Instanciamos express en una variable
 var app = express();
-// El Path
-var path = require('path');
+
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
@@ -12,19 +11,6 @@ var https = require('https');
 // Cargamos libreria para parsear formularios por post
 var bodyParser = require('body-parser');
 // Cargamos la libreria para poder subir archivos
-var multer = require('multer');
-// instanciamos la libreria
-var upload = multer();
-
-// Configuracion de MULTER
-var storage = multer.diskStorage({
-    destination: function(req, file, callback) {
-        callback(null, './uploads');
-    },
-    filename: function(req, file, callback) {          
-        callback(null, file.originalname);         
-    }    
-});
 
 /*  LIBRERIAS AUTHENTICATION  */
 var ad = require('activedirectory');
@@ -39,20 +25,24 @@ var configAD = {
     password: 'C4rr13r!'
 };
 
+// Librería de Logeo privado
+let log = require('./Log');
+let LOG_SERVER_PREFIX = "MainServer - ";
+
 // Configuración de certificados
 var privateKey = fs.readFileSync('./portal.key');
 var certificate = fs.readFileSync('./portal.pem');
 var credentials = { key: privateKey, cert: certificate };
 const server = http.createServer(app);
 const servers = https.createServer(credentials, app);
-const PORT_STANDARD = 40;
-const PORT_SECURE = 41;
-const PUBLIC_URL = "url.com";
+const PORT_STANDARD = 80;
+const PORT_SECURE = 443;
+const PUBLIC_URL = "portal.megatech.la";
 
 // Hacemos que express considere las librerias middleware bodyparser y multer para su funcionamiento
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-// ... sumamos cookie y session para manejar el auth
+
 app.use(cookie());
 app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: false }));
 
@@ -103,16 +93,16 @@ app.get('/logout', (req, res, next) => {
 });
 
 
-app.use('/login', express.static('./public/login'));
+// app.use('/login', express.static('./public/login'));
 
-app.use(function(req, res, next) {
+// app.use(function(req, res, next) {
 
-    if (req.session.isLogged || req.path.includes("/presentacion/")) {
-        next();
-    } else {
-        res.sendFile(path.join(__dirname + '/public/login/login.html'));
-    }
-});
+//     if (req.session.isLogged || req.path.includes("/presentacion/")) {
+//         next();
+//     } else {
+//         res.sendFile(path.join(__dirname + '/public/login/login.html'));
+//     }
+// });
 
 app.use('/', express.static('./public'));
 
@@ -141,16 +131,20 @@ app.post('/send', (req, res) => {
         chatbot.message({ userInput: message, context: context, firstname: firstName, fullname: fullName, username: username, auth: auth }).then((messageFromBot) => {
             res.json(messageFromBot);
         });
-    })
+})
 
-    app.post('/upload', (req,res) => { 
-        let upload = multer({storage: storage});
-        upload.array("upload_file[]")(req,res, function(err) { 
-            console.log(req.files)
-        });
-
-    });
-
+// Control de rutas para subidas de archivos
+app.post('/upload_documents', (req, res) => {
+    var uploads = require('./upload.js')();
+    
+    // Utilizando la libreria Upload, gestionamos la solicitud de subida de archivos
+    uploads.upload_multiple_and_return_filenames({request: req, response: res}).then(
+        file_names => {                        
+            res.json({filenames:file_names, message: "Subida de archivos correcta"});
+        }).catch(e => {
+            res.status(400).json({filenames:[], message: e.message});
+        })
+})
 
 // Lanzamos la escucha sobre el puerto indicado
 server.listen(PORT_STANDARD);
