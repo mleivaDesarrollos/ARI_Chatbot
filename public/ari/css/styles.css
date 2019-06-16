@@ -67,6 +67,11 @@ input[type="color"]:focus,
     position: absolute;
 }
 
+.alert{
+    max-width: 285px!important;
+    font-size: small!important;
+}
+
 .bg-telecom {
     background-color: #00b4c5;
 }

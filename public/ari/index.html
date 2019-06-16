@@ -2,23 +2,30 @@
     <div class="jumbotron m-0 p-0 bg-transparent">
         <div class="row m-0 p-0 position-relative">
             <div class="col-12 p-0 m-0 position-absolute" style="right: 0px;">
-                <div class="card border-0 rounded" style="box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.10), 0 6px 10px 0 rgba(0, 0, 0, 0.01); overflow: hidden; height: 100vh;">
-                    <div class="card-header p-1 bg-telecom border border-top-0 border-left-0 border-right-0" style="color: rgba(96, 125, 139,1.0);">
+                <div class="card border-0 rounded"
+                    style="box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.10), 0 6px 10px 0 rgba(0, 0, 0, 0.01); overflow: hidden; height: 100vh;">
+                    <div class="card-header p-1 bg-telecom border border-top-0 border-left-0 border-right-0"
+                        style="color: rgba(96, 125, 139,1.0);">
                         <img class="rounded float-left" style="width: 50px; height: 50px;" src="./img/telecom.jpg" />
 
-                        <h6 class="float-left text-light" style="margin: 0px; margin-left: 10px;"> ARI</br><small> Asistencia Remota Inteligente</small></h6>
+                        <h6 class="float-left text-light" style="margin: 0px; margin-left: 10px;"> ARI</br><small>
+                                Asistencia Remota Inteligente</small></h6>
                         <div class="dropdown show">
-                            <a id="dropdownMenuLink" data-toggle="dropdown" class="btn btn-sm float-right text-secondary" role="button">
+                            <a id="dropdownMenuLink" data-toggle="dropdown"
+                                class="btn btn-sm float-right text-secondary" role="button">
                                 <h5><i class="fa fa-ellipsis-h text-light" aria-hidden="true"></i>&nbsp;</h5>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-right border p-0" aria-labelledby="dropdownMenuLink">
-                                <a class="dropdown-item p-2 text-secondary" href="/logout"> <i class="fa fa-times m-1" aria-hidden="true"></i> Salir </a>
+                            <div class="dropdown-menu dropdown-menu-right border p-0"
+                                aria-labelledby="dropdownMenuLink">
+                                <a class="dropdown-item p-2 text-secondary" href="/logout"> <i class="fa fa-times m-1"
+                                        aria-hidden="true"></i> Salir </a>
                             </div>
                         </div>
                     </div>
 
                     <div class="card bg-sohbet border-0 m-0 p-0" style="height: 100vh;">
-                        <div id="" class="card border-0 m-0 p-0 position-relative bg-transparent" style="overflow-y: auto; height: 100vh;">
+                        <div id="" class="card border-0 m-0 p-0 position-relative bg-transparent"
+                            style="overflow-y: auto; height: 100vh;">
                             <!-- Aca empiezan los logs -->
                             <div class="chat-logs">
 
@@ -35,10 +42,14 @@
             <form id="formInput" class="m-0 p-0">
                 <div class="row m-0 p-0 justify-content-center">
                     <div class="col-7 m-0 p-1">
-                        <input id="chat-input" class="mw-100 border rounded form-control" type="text" name="text" placeholder="Escribí tu mensaje..." autocomplete="off">
+                        <input id="chat-input" class="mw-100 border rounded form-control" type="text" name="text"
+                            placeholder="Escribí tu mensaje..." autocomplete="off">
                     </div>
                     <div class="col-0 m-0 p-1">
-                        <button id="chat-submit" class="btn btn-outline rounded border w-100 d-inline"><div id="loader"></div><i id="plane" class="fa fa-paper-plane" style="padding-top: 3.5px;padding-bottom: 3.5px;" aria-hidden="true"></i></button>
+                        <button id="chat-submit" class="btn btn-outline rounded border w-100 d-inline">
+                            <div id="loader"></div><i id="plane" class="fa fa-paper-plane"
+                                style="padding-top: 3.5px;padding-bottom: 3.5px;" aria-hidden="true"></i>
+                        </button>
                     </div>
                 </div>
             </form>
@@ -72,17 +83,24 @@
         <div class="w-100 justify-content-between">
             <h7 id="response" class="mb-1"></h7>
         </div><small id="tagSmall"><em id="description"></em></small>
-        <!-- <label class="btn btn-primary">
-            Examinar... <input id="upload" name="upload_file" type="file" multiple>
-        </label> -->
         <div class="input-group">
             <div class="custom-file">
-                <input type="file" id="upload" name="upload_file"  class="custom-file-input" multiple>
+                <input type="file" id="upload" name="upload_file" class="custom-file-input" multiple>
                 <label class="custom-file-label" for="upload">Examinar</label>
             </div>
         </div>
         <div class="m-2 progress">
-            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+        </div>
+        <div id="alertFail" class="d-none alert alert-danger" role="alert">
+            Tus archivos son muy pesados, o tal vez tengan un formato no admitido
+        </div>
+        <div id="alertSuccess" class="d-none alert alert-success" role="alert">
+            Pudiste subir tus archivos!!!
+        </div>
+        <div id="alertInfo" class="alert alert-info" role="alert">
+            Recordá que solo podes subir <strong>5 archivos a la vez</strong> y no deben superar los 10mb.
         </div>
     </div>
 </div>
