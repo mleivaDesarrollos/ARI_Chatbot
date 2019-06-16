@@ -146,7 +146,7 @@ app.post('/send', (req, res) => {
     app.post('/upload', (req,res) => { 
         let upload = multer({storage: storage});
         upload.array("upload_file[]")(req,res, function(err) { 
-            console.log(req.files)    
+            console.log(req.files)
         });
 
     });

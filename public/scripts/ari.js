@@ -400,21 +400,7 @@
     }
 
 
-    let uploadFile = function(files) {
-        let formData = new FormData();
-        for(let i=0; i < files.length; i++){
-            formData.append("upload_file[]", files[i]);
-        }            
-        //console.log(formData);
-        let xhr = new XMLHttpRequest();
-        xhr.open('POST', '/upload');
-        xhr.addEventListener('load', () => {
-            if(xhr.status == 200) {
-                console.log("Subida correcta");
-            }
-        })
-        xhr.send(formData);
-    }
+    
 
     var generate_message = function(msg, type) {
         var conversation_starting = indice > 1;
@@ -479,6 +465,35 @@
         }
 
         indice++;
+    }
+
+    let uploadFile = function(files) {
+        let formData = new FormData();
+        for(let i=0; i < files.length; i++){
+            formData.append("upload_file[]", files[i]);
+        }            
+        //console.log(formData);
+        let xhr = new XMLHttpRequest();
+        // Capturamos el elemento a controlar
+        let progressBar = document.querySelector("#progressBar");
+        
+        // Controlamos el progreso de la subida de archivo
+        xhr.upload.addEventListener("progress", (event) =>{
+            // A todo el valor lo redondeamos para tener un numero entero
+            let porcentaje = Math.round((event.loaded / event.total) * 100);
+            progressBar.style.width = porcentaje + "%";
+        });
+
+        // Cuando el archivo finaliza cambiamos el estilo del progress    
+        xhr.open('POST', '/upload');
+        xhr.addEventListener('load', () => {
+            if(xhr.status == 200) {
+                progressBar.classList.remove("bg-info");
+                progressBar.classList.add("bg-success");
+                console.log("Subida correcta");
+            }
+        })
+        xhr.send(formData);
     }
 
     var linkDetect = function(message) {
@@ -588,12 +603,10 @@
         var submit = document.querySelector("#chat-submit");
 
         // Verificamos si algo cambia en el input
-
-        inputButton.addEventListener('change', e => {
-            let files = e.target.files;
-            uploadFile(files);          
-        });
-
+            inputButton.addEventListener('change', e => {
+                let files = e.target.files;
+                uploadFile(files);
+            });
         // Cambiamos el estilo del text box cuando ingresa un mensaje de tipo file
         input.style.cursor = "no-drop";
         input.classList.add('disabled-input');
