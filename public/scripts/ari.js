@@ -391,9 +391,6 @@
         send_message_api(e.target.displayText, e.target.valueText);
     }
 
-
-
-
     var generate_message = function (msg, type) {
         var conversation_starting = indice > 1;
         var plane = document.querySelector("#plane");
@@ -488,8 +485,8 @@
         xhr.open('POST', '/upload_documents');
         xhr.addEventListener('load', () => {
             // Validamos tamaño, cantidad y resp del server
-            if (files.length >= MAXIMUM_NUMBER_OF_FILES || totalSize >= MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {
-                console.log(xhr.response)
+            if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {
+                console.log(files.length);
                 // Abortamos la request
                 xhr.abort();
                 progressBar.style.width = 50 + "%";
