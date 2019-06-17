@@ -447,30 +447,30 @@ function CreateTicketOnUserName({session_token, ticket_title, ticket_description
 
 // Utilizando credenciales de MEGO, se suben archivos al sistema de tickets
 // Si hay una falla en uno de los archivos que se debe subir, se continua con el siguiente archivo
-function UploadFilesToGLPI ({session_token, files, ticket_id} ={}) {
+let UploadFilesToGLPI = async({session_token, files, ticket_id} ={}) => {
     // Se disponen de las variable de logs
     let ACTION_LOG = "UploadFilesToGLPI - ";
     let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
-    // Preparamos una promesa que se devolvera al final del proceso
-    let promise = new Promise((resolve, reject) => {
-        // Validamos token y nombre de archivos
-        if(session_token == undefined) return reject(log.Register(ERROR_LOG + "Falta token de session para proceder con la subida de archivos"));
-        // Validamos si los nombres fueron comunicados
-        if(files == undefined || files.length < 1) return reject(log.Register(ERROR_LOG + "No se ha comunicado nombres de archivos o se ha comunicado incorrectamente"));
-        // Validamos que se haya comunicado el id de ticket
-        if(ticket_id == undefined) return reject(log.Register(ERROR_LOG + "Falta el ID del Ticket para que pueda ser informado en la subida de archivos"));
-        // Disponemos de los ID de las imagenes a vincular
-        let document_id = [];
-        // Cargamos los headers correspondientes
-        let header = get_upload_headers({s_token: session_token});
-        // Iteramos sobre todos los archivos a enviar
-        for(let filesIndex = 0; filesIndex < files.length; filesIndex++){
-            // Separamos por variable el archivo a subir
-            let file = files[filesIndex];
-            // Obtenemos el formdata para el archivo actual
-            let formdata = get_formdata_request_upload_file({up_file: file, tkt_id: ticket_id});
-            // Generamos la request con la información obtenida
-            request({
+
+    // Validamos token y nombre de archivos
+    if(session_token == undefined) return log.Register(ERROR_LOG + "Falta token de session para proceder con la subida de archivos");
+    // Validamos si los nombres fueron comunicados
+    if(files == undefined || files.length < 1) return log.Register(ERROR_LOG + "No se ha comunicado nombres de archivos o se ha comunicado incorrectamente");
+    // Validamos que se haya comunicado el id de ticket
+    if(ticket_id == undefined) return log.Register(ERROR_LOG + "Falta el ID del Ticket para que pueda ser informado en la subida de archivos");
+    // Disponemos de los ID de las imagenes a vincular
+    let document_id = [];
+    // Cargamos los headers correspondientes
+    let header = get_upload_headers({s_token: session_token});
+    // Iteramos sobre todos los archivos a enviar
+    for(let filesIndex = 0; filesIndex < files.length; filesIndex++){
+        // Separamos por variable el archivo a subir
+        let file = files[filesIndex];
+        // Obtenemos el formdata para el archivo actual
+        let formdata = get_formdata_request_upload_file({up_file: file, tkt_id: ticket_id});
+        // Generamos la request con la información obtenida
+        await new Promise((resolve, reject) =>{ 
+                request({
                 uri: URL_DOCUMENT_UPLOAD,
                 method: "POST",
                 headers: header,
@@ -478,29 +478,25 @@ function UploadFilesToGLPI ({session_token, files, ticket_id} ={}) {
             }, function(err, response, body)  {
                 // Validamos si existen errores
                 if(err) {
-                    log.Register(ERROR_LOG + "Error subiendo " + file.originalname + " con nombre temporal " + file.temporaryname + ". Detalle: " + err.message);
+                    return reject(log.Register(ERROR_LOG + "Error subiendo " + file.originalname + " con nombre temporal " + file.temporaryname + ". Detalle: " + err.message));
                 } else {
                     if(is_request_ok({statusCode: response.statusCode})) {
                         // Parseamos el objeto recibido
                         let document_json = JSON.parse(body);
+                        console.log(document_json);
                         // Pusheamos el id sobre el array de documentos
                         document_id.push(document_json.id);
+                        resolve("ok")
                     } else {
                         // Informamos el error
-                        handle_request_errors(response, ERROR_LOG, session_token);
+                        reject(handle_request_errors(response, ERROR_LOG, session_token));
                     }
                 }
-                // Si es la ultima iteración de todos los archivos, devolvemos como respuesta de la promesa los ID
-                if(filesIndex + 1 == files.length) {
-                    // Resolvemos con los ID obtenidos de las multiples solicitudes
-                    resolve(document_id)
-                }
             });
-        }        
-
-    });
+        });
+    }           
     // Devolvemos la promesa
-    return promise;
+    return document_id;
 }
 
 // Del ticket generado obtenemos el id de usuario
@@ -557,7 +553,8 @@ function LinkDocumentsToTicket({session_token, ticket_id, documents_id, user_id}
         if(documents_id == undefined || documents_id.length < 1) return reject(log.Register(ERROR_LOG + "Esta faltando los ID de documentos a vincular."));
         // Obtenemos la cabecera estandard de tickets
         let header = get_token_headers({s_token: session_token});
-        // Iteramos sobre todos los documentos
+        console.log(documents_id);
+        // Iteramos sobre todos los documentos        
         for(let documentIndex = 0; documentIndex < documents_id.length; documentIndex++){
             // Obtenemos el id del documento
             let document_id = documents_id[documentIndex];
@@ -577,7 +574,7 @@ function LinkDocumentsToTicket({session_token, ticket_id, documents_id, user_id}
                 } else {
                     if(is_request_ok({statusCode: response.statusCode})){
                         // Parseamos el resultado
-                        let link_result = JSON.parse(body);
+                        let link_result = JSON.parse(body);                        
                         // Verificamos la respuesta
                         if(!link_result.message.includes("agregado")){                            
                             log.Register(ERROR_LOG + "Error vinculando el documento " + document_id + ". Detalle: " + link_result.message);
@@ -1076,6 +1073,7 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
             
             // Validamos si se comunico archivos de subida
             if(this._files_to_upload && this._files_to_upload.length > 0){
+                console.log(this._files_to_upload);
                 UploadFilesToGLPI({session_token: this._mego_token, files: this._files_to_upload, ticket_id: this._ticket_id})
                 .then(documents_id => 
                     LinkDocumentsToTicket({session_token: this._mego_token, documents_id: documents_id, ticket_id: this._ticket_id, user_id: this._user_id})
@@ -1183,8 +1181,6 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
         }).catch(error => {
             return log.Register(GLPI_ERROR_LOG_PREFIX + "Error al procesar el ticket nuevo. Verificar log de sistema para obtener más información.");
         });
-        // Limpiamos instancia
-        this._clean_instance();
         // Se devuelve la información del ticket solicitada
         return ticket_info;
     }
@@ -1203,8 +1199,6 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
         }).catch(error => {            
             return log.Register(GLPI_ERROR_LOG_PREFIX + "Error al procesar el ticket nuevo. Verificar log de sistema para obtener más información.");
         });
-        // Limpiamos instancia
-        this._clean_instance();
         // Devolvemos el valor del ticket
         return ticket_info;
     }
@@ -1217,8 +1211,6 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
         await this._getAllUserLocations()
         .then(locs => user_locations = locs)
         .catch(error => { return log.Register(GLPI_ERROR_LOG_PREFIX + "Error al obtener el listado de ubicaciones. Verfiicar log para mas información.")} );
-        // Limpiamos instancia
-        this._clean_instance();
         // Devolvemos la variable procesada
         return user_locations;
     }
@@ -1229,9 +1221,7 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
         // Ejecutamos la solicitud a GLPi y esperamos la respuesta
         await this._getAllWorkstations()
         .then(ws => workstations = ws)
-        .catch(error => {return log.Register(GLPI_ERROR_LOG_PREFIX + "Error al obtener los equipos del usuario")});        
-        // limpiamos las instancias
-        this._clean_instance();
+        .catch(error => {return log.Register(GLPI_ERROR_LOG_PREFIX + "Error al obtener los equipos del usuario")});      
         // Devolvemos el listado de máquinas procesadas
         return workstations;
     }

@@ -112,7 +112,7 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
                 // Guardamos el tipo de problema como si fuera el título del ticket
                 title = caller_context[property];
             }
-            else if (property.toLocaleLowerCase().includes("filenames")){
+            else if (property.toLocaleLowerCase().includes("file_names")){
                 // Si hay que subir archivos, se guarda en una variable
                 upload_files = caller_context[property];
             }
