@@ -3,3 +3,5 @@
 10-06-2019 18:18:09      Error: GLPi - GetLocations - Error de autenticación con la API de GLPI o Token de Session revocado. Token de session rechazada: e3t4s4uul2vi8ta22a2kqhrmu5. No tiene permiso para realizar esta acción.
 10-06-2019 18:18:48      Error: GLPi - GetLocations - Error de autenticación con la API de GLPI o Token de Session revocado. Token de session rechazada: fsu0f8fsh0fs464ab910r7lo85. No tiene permiso para realizar esta acción.
 10-06-2019 18:20:49      Error: GLPi - GetLocations - Error de autenticación con la API de GLPI o Token de Session revocado. Token de session rechazada: e7kurb6bdtm4jprg6q880mk0a5. No tiene permiso para realizar esta acción.
+16-06-2019 15:13:52      Error: GLPi - Para generar una instancia de módulo se necesita la autorización en formato usuario:clave en formato base64
+16-06-2019 15:14:38      Error: GLPi - Para generar una instancia de módulo se necesita la autorización en formato usuario:clave en formato base64
