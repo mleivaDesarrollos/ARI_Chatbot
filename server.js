@@ -7,6 +7,7 @@ var app = express();
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
+var path = require('path');
 
 // Cargamos libreria para parsear formularios por post
 var bodyParser = require('body-parser');

@@ -26,6 +26,8 @@
     const USER_CLOSE_TICKET_MESSAGE = "Se da conforme a la solución planteada por el chatbot.";
     // Al utilizar el header y querer modificarlo, realizar un clonado
     const GLPI_BASIC_HEADER = {"Content-Type" : "application/json"};
+    // Disponemos del HEADER para subida de archivos
+    const GLPI_UPLOAD_HEADER = {"Content-Type" : "multipart/form-data"};
     // URL para solicitar inicio de Sessión
     const URL_INITSESSION = URL_GLPI + "/apirest.php/initSession";
     // URL para Crear u Obtener ticket
@@ -50,6 +52,10 @@
     const URL_COMPUTER = URL_GLPI + "/apirest.php/search/Computer?is_deleted=0&criteria[0][field]=70&criteria[0][searchtype]=equals&criteria[0][value]=%user_id%&criteria[1][link]=AND&criteria[1][field]=31&criteria[1][searchtype]=contains&criteria[1][value]=En uso&withindexes=true";
     // URL para cargar items dentro de los tickets
     const URL_ITEM_TICKET = URL_GLPI + "/apirest.php/Item_Ticket";
+    // URL para cargar documentos en tickets
+    const URL_DOCUMENT_UPLOAD = URL_GLPI + "/apirest.php/Document";
+    // URL para vincular documentos a tickets
+    const URL_DOCUMENT_ITEM = URL_GLPI + "/apirest.php/Document_Item";
 
     // ID de estado de Inventario
     const COMPUTER_NAME_FIELD = 1;
@@ -169,6 +175,15 @@ function get_token_headers({s_token} = {}){
     return headers;
 }
 
+function get_upload_headers({s_token} = {}){
+    // Copiarmos el header para subidas de archivo
+    let headers = GLPI_UPLOAD_HEADER;
+    // Agregamos el token de subida de archivo
+    headers["Session-Token"] = s_token;
+    // Devolvemos el header procesado
+    return headers;
+}
+
 function get_body_request_new_ticket({tkt_title, tkt_description, tkt_category, is_req } = {}){
     // Validamos si en la petición de generación de ticket se solicito
     var type = is_req == undefined || is_req == false ? 1 : 2;
@@ -276,6 +291,40 @@ function get_body_request_workstation_add({tkt_id, wks_id} = {}){
         }
     }
     return JSON.stringify(body);
+}
+
+function get_body_request_document_link({doc_id, tkt_id, usr_id} ={}){
+    // Preparamos el body a regresar
+    let body = {}
+    // Cargamos los componentes
+    body.input = {
+        documents_id: doc_id,
+        items_id: tkt_id,
+        itemtype: "Ticket",
+        users_id: usr_id
+    }
+    // Devolvemos el body procesado
+    return JSON.stringify(body);
+}
+
+function get_formdata_request_upload_file({up_file, tkt_id} ={}){
+    // Preparamos el formdata a devolver en el proceso
+    let formData = {}
+    // Cargamos la libreria de upload
+    let upload = require('../upload')();
+    // Cargamos el buffer del archivo a subir
+    file_upload = upload.get_file_buffers_for_request_send({file_to_read: up_file});
+    // Validamos si el proceso de obtención de buffer fue exitoso, chequeando el objeto
+    if(file_upload){
+        // Procedemos a cargar el formdata con la información
+        formData["uploadManifest"] = '{"input" : {"name":"Documentar incidente ' + tkt_id + '", "_filename": "[' + file_upload.originalname + ']"}}';
+        formData["type"] = "application/json";
+        formData["filename[0]"] = { value: file_upload.buffer, options: {filename: file_upload.originalname}};
+        // Devolvemos el formdata procesado
+        return formData;
+    } else {
+        return new Error("No se pudo subir el archivo " + up_file.temporaryname + ", " + up_file.originalname);
+    }
 }
 
 function ConnectGLPIUserAndGetSessionToken({base_64_authorization} = {}) {
@@ -396,6 +445,64 @@ function CreateTicketOnUserName({session_token, ticket_title, ticket_description
     return promise;    
 }
 
+// Utilizando credenciales de MEGO, se suben archivos al sistema de tickets
+// Si hay una falla en uno de los archivos que se debe subir, se continua con el siguiente archivo
+function UploadFilesToGLPI ({session_token, files, ticket_id} ={}) {
+    // Se disponen de las variable de logs
+    let ACTION_LOG = "UploadFilesToGLPI - ";
+    let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
+    // Preparamos una promesa que se devolvera al final del proceso
+    let promise = new Promise((resolve, reject) => {
+        // Validamos token y nombre de archivos
+        if(session_token == undefined) return reject(log.Register(ERROR_LOG + "Falta token de session para proceder con la subida de archivos"));
+        // Validamos si los nombres fueron comunicados
+        if(files == undefined || files.length < 1) return reject(log.Register(ERROR_LOG + "No se ha comunicado nombres de archivos o se ha comunicado incorrectamente"));
+        // Validamos que se haya comunicado el id de ticket
+        if(ticket_id == undefined) return reject(log.Register(ERROR_LOG + "Falta el ID del Ticket para que pueda ser informado en la subida de archivos"));
+        // Disponemos de los ID de las imagenes a vincular
+        let document_id = [];
+        // Cargamos los headers correspondientes
+        let header = get_upload_headers({s_token: session_token});
+        // Iteramos sobre todos los archivos a enviar
+        for(let filesIndex = 0; filesIndex < files.length; filesIndex++){
+            // Separamos por variable el archivo a subir
+            let file = files[filesIndex];
+            // Obtenemos el formdata para el archivo actual
+            let formdata = get_formdata_request_upload_file({up_file: file, tkt_id: ticket_id});
+            // Generamos la request con la información obtenida
+            request({
+                uri: URL_DOCUMENT_UPLOAD,
+                method: "POST",
+                headers: header,
+                formData: formdata
+            }, function(err, response, body)  {
+                // Validamos si existen errores
+                if(err) {
+                    log.Register(ERROR_LOG + "Error subiendo " + file.originalname + " con nombre temporal " + file.temporaryname + ". Detalle: " + err.message);
+                } else {
+                    if(is_request_ok({statusCode: response.statusCode})) {
+                        // Parseamos el objeto recibido
+                        let document_json = JSON.parse(body);
+                        // Pusheamos el id sobre el array de documentos
+                        document_id.push(document_json.id);
+                    } else {
+                        // Informamos el error
+                        handle_request_errors(response, ERROR_LOG, session_token);
+                    }
+                }
+                // Si es la ultima iteración de todos los archivos, devolvemos como respuesta de la promesa los ID
+                if(filesIndex + 1 == files.length) {
+                    // Resolvemos con los ID obtenidos de las multiples solicitudes
+                    resolve(document_id)
+                }
+            });
+        }        
+
+    });
+    // Devolvemos la promesa
+    return promise;
+}
+
 // Del ticket generado obtenemos el id de usuario
 function GetGLPIUserIDByTicket({session_token, ticket_id} = {}) {
     // Generamos los elemetnos de logs
@@ -430,6 +537,64 @@ function GetGLPIUserIDByTicket({session_token, ticket_id} = {}) {
         })
     });
     // Devolvemos la promesa
+    return promise;
+}
+
+// Luego de subir los archivos y obtener los IDs de documentos como resultados
+// Procedemos a vincular los documentos con el ticket generado
+// Si hay error en alguna vinculación de un documento, se sigue con los restantes
+function LinkDocumentsToTicket({session_token, ticket_id, documents_id, user_id} ={}){
+    // Preparamos las constantes en caso de que exista algún error
+    let ACTION_LOG = "LinkDocumentsToTicket - ";
+    let ERROR_LOG = GLPI_ERROR_LOG_PREFIX + ACTION_LOG;
+    // Preparamos la promesa a devolver
+    let promise = new Promise((resolve, reject) => {
+        // Validamos los campos solicitados
+        if(session_token == undefined) return reject(log.Register(ERROR_LOG + "Está faltando el token de sesion para poder operar."));
+        // Validamos si se informó ticket
+        if(ticket_id == undefined) return reject(log.Register(ERROR_LOG + "No se comunicó ID de ticket."));
+        // Validamos si vienen cargados ID de documentos
+        if(documents_id == undefined || documents_id.length < 1) return reject(log.Register(ERROR_LOG + "Esta faltando los ID de documentos a vincular."));
+        // Obtenemos la cabecera estandard de tickets
+        let header = get_token_headers({s_token: session_token});
+        // Iteramos sobre todos los documentos
+        for(let documentIndex = 0; documentIndex < documents_id.length; documentIndex++){
+            // Obtenemos el id del documento
+            let document_id = documents_id[documentIndex];
+            // Separamos el body de la solicitud
+            let body = get_body_request_document_link({doc_id: document_id, tkt_id: ticket_id, usr_id: user_id});            
+            // Ejecutamos la request
+            request({
+                url: URL_DOCUMENT_ITEM,
+                method: "POST",
+                headers: header,
+                body: body
+            }, (error, response, body) => {
+                // Validamos si existen errores
+                if(error) {
+                    // Registramos el error a fin de tener datos
+                    log.Register(ERROR_LOG + "Error vinculando documento ID " + document_id + ". Detalle: " + error.message);
+                } else {
+                    if(is_request_ok({statusCode: response.statusCode})){
+                        // Parseamos el resultado
+                        let link_result = JSON.parse(body);
+                        // Verificamos la respuesta
+                        if(!link_result.message.includes("agregado")){                            
+                            log.Register(ERROR_LOG + "Error vinculando el documento " + document_id + ". Detalle: " + link_result.message);
+                        }
+                    } else {                        
+                        handle_request_errors(response, ERROR_LOG, session_token);
+                    }
+                }
+                // TODO hay que ver si por ser promise todo se maneja asincronamente, esta validacion es por esa duda
+                if(documentIndex + 1 == documents_id.length){
+                    // Proceso completado
+                    resolve("Linkeo correcto")
+                }
+            })
+        }
+    });
+    // Devolvemos la promesa procesada
     return promise;
 }
 
@@ -859,7 +1024,10 @@ function CloseTicketByMego({session_token, ticket_id}={}){
     return promise;
 }
 
-module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, is_req, workstation_id} = {}) {
+
+
+
+module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, is_req, workstation_id, files_to_upload} = {}) {
     // Validamos los parametros de entrada
     if(user_auth == undefined) return log.Register(GLPI_ERROR_LOG_PREFIX + "Para generar una instancia de módulo se necesita la autorización en formato usuario:clave en formato base64");
     // Almacenamos los datos de instancia
@@ -869,6 +1037,7 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
     this._ticket_category = tkt_category;
     this._ticket_request = is_req;
     this._workstation_id = workstation_id;
+    this._files_to_upload = files_to_upload;
     
     //Creación de ticket y devolución de ID
     this._createTicketWithIDAndGroupInfo = function() {
@@ -1058,6 +1227,22 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
     }
     return this;
 }
+
+// UploadFilesToGLPI({session_token: "797l0jpikjbc83mph4av3csse4", files:[
+//     {originalname: "imagen.png", temporaryname: "UPLOAD000003.png"},
+//     {originalname: "texto.txt", temporaryname: "UPLOAD000001.txt"},
+//     {originalname: "documento.pdf", temporaryname: "UPLOAD000002.pdf"}
+// ], ticket_id: 296 } ).then(doc_ids => console.log(doc_ids));
+
+// LinkDocumentsToTicket({session_token: "797l0jpikjbc83mph4av3csse4", ticket_id: 296, documents_id: [56, 57, 58], user_id: 9}).then(respuesta => {
+//     console.log(respuesta);
+// } )
+
+// UploadFilesToGLPI({session_token: "797l0jpikjbc83mph4av3csse4", files:[
+//     {originalname: "imagen.png", temporaryname: "UPLOAD000003.png"},
+//     {originalname: "texto.txt", temporaryname: "UPLOAD000001.txt"},
+//     {originalname: "documento.pdf", temporaryname: "UPLOAD000002.pdf"}
+// ], ticket_id: 296 } ).then(doc_ids => console.log(doc_ids));
 
 // Unit Test, locations
 // GetLocations({session_token: "vv3ferjkajr81s9e32lp3f6dl4"}).then(locs => console.log(locs));
