@@ -13,7 +13,7 @@
     // Constantes relacionadas a la subida de archivos
     const MAXIMUM_NUMBER_OF_FILES = 5;
     const MAXIMUM_SIZE_OF_FILES = 10485760;
-    
+
     // Variables que se utilizaran como recursos publicos
     var chat_msg_usuario;
     var chat_msg_bot;
@@ -529,6 +529,20 @@
                     JSONContext.file_names = JSONResponse.filenames;
                     // Parseamos a string y cambiamos el valor del contexto
                     contextValue = JSON.stringify(JSONContext);
+        
+                    // Preparamos los datos a enviar
+                    var obj = {
+                        message: "ok",
+                        context: contextValue
+                    }
+                    // Enviamos la solicitud al servidor   
+                    AjaxCall({
+                        url: CHATBOT_URL,
+                        method: CHATBOT_HTTPMETHOD,
+                        callback: RenderResponseMessage,
+                        data: obj,
+                        json: true
+                    });
                 }
             }
         });
