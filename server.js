@@ -49,7 +49,7 @@ app.use(session({ secret: 'codigo secreto', resave: false, saveUninitialized: fa
 
 // Redireccionamiento
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     if (req.secure || !(req.headers.host.includes(PUBLIC_URL))) {
         // request was via https, so do no special handling
         next();
@@ -64,9 +64,9 @@ app.post('/authenticate', (req, res) => {
     var adMega = new ad(configAD);
     var userData = req.body;
     // console.log(userData); // USR, PSW, STY
-    adMega.authenticate(userData.user + '@mega.com.ar', userData.pass, function(err, auth) {
+    adMega.authenticate(userData.user + '@mega.com.ar', userData.pass, function (err, auth) {
         if (auth) {
-            adMega.find('(&(sAMAccountName=' + userData.user + '))', function(err, results) {
+            adMega.find('(&(sAMAccountName=' + userData.user + '))', function (err, results) {
                 // Separamos el primer nombre del usuario de AD
                 var firstName = results.users[0].givenName.split(" ")[0];
                 var fullName = results.users[0].displayName;
@@ -108,7 +108,7 @@ app.use(function(req, res, next) {
 app.use('/', express.static('./public'));
 
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "POST");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -116,34 +116,34 @@ app.use(function(req, res, next) {
 });
 
 app.post('/send', (req, res) => {
-        // Separamos el componente JSON enviado
-        let msgToSend = req.body;
-        // Obtenemos el nombre del usuario sacado de la session
-        let firstName = req.session.firstname;
-        let fullName = req.session.fullname;
-        let username = req.session.username;
-        let auth = req.session.auth;
-        // Separamos menssaje
-        var message = msgToSend.message;
-        var context;
-        if (msgToSend.context != undefined) context = JSON.parse(msgToSend.context);
-        var chatbot = require('./Chatbot/WatsonIntegration');
-        // TODO : Sacar el harcodeado
-        chatbot.message({ userInput: message, context: context, firstname: firstName, fullname: fullName, username: username, auth: auth }).then((messageFromBot) => {
-            res.json(messageFromBot);
-        });
+    // Separamos el componente JSON enviado
+    let msgToSend = req.body;
+    // Obtenemos el nombre del usuario sacado de la session
+    let firstName = req.session.firstname;
+    let fullName = req.session.fullname;
+    let username = req.session.username;
+    let auth = req.session.auth;
+    // Separamos menssaje
+    var message = msgToSend.message;
+    var context;
+    if (msgToSend.context != undefined) context = JSON.parse(msgToSend.context);
+    var chatbot = require('./Chatbot/WatsonIntegration');
+    // TODO : Sacar el harcodeado
+    chatbot.message({ userInput: message, context: context, firstname: firstName, fullname: fullName, username: username, auth: auth }).then((messageFromBot) => {
+        res.json(messageFromBot);
+    });
 })
 
 // Control de rutas para subidas de archivos
 app.post('/upload_documents', (req, res) => {
     var uploads = require('./upload.js')();
-    
+
     // Utilizando la libreria Upload, gestionamos la solicitud de subida de archivos
-    uploads.upload_multiple_and_return_filenames({request: req, response: res}).then(
-        file_names => {                        
-            res.json({filenames:file_names, message: "Subida de archivos correcta"});
+    uploads.upload_multiple_and_return_filenames({ request: req, response: res }).then(
+        file_names => {
+            res.json({ filenames: file_names, message: "Subida de archivos correcta" });
         }).catch(e => {
-            res.status(400).json({filenames:[], message: e.message});
+            res.status(400).json({ filenames: [], message: e.message });
         })
 })
 

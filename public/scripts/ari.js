@@ -14,10 +14,6 @@
     const MAXIMUM_NUMBER_OF_FILES = 5;
     const MAXIMUM_SIZE_OF_FILES = 10485760;
 
-    // const INTERVAL_AWAIT_RESPONSE = 48000;
-    // const INTERVAL_FINISH_ACTIVITY = 60000;
-    // const INTERVAL_POST_FINISH_DELAY = 4000;
-
     // Variables que se utilizaran como recursos publicos
     var chat_msg_usuario;
     var chat_msg_bot;
@@ -38,6 +34,8 @@
 
     // Funcion encargada de disparar los eventos principales del chat
     var events = function () {
+        // Desabilitamos el click derecho
+        // document.oncontextmenu = function(){return false;}
         // Iniciar conversacion
         startConversation();
         // Enviar mensaje
@@ -50,7 +48,6 @@
         var div_chat_ari = document.createElement("div");
         div_chat_ari.innerHTML = responseHTML;
         var chat_body = div_chat_ari.querySelector(".chat-ari");
-        console.log(chat_body);
         var input = div_chat_ari.querySelector("#formInput");
 
         chat_msg_usuario = div_chat_ari.querySelector(".chat-msg.usuario");
@@ -141,7 +138,6 @@
             pending_delivering_messages.shift();
             // De momento, dejamos asi, PERO no deberia estar asi jeje
             setTimeout(function () {
-                console.log(message.text);
                 if (message.text == "taca taca") {
                     message.type = "file";
                 }
@@ -154,7 +150,6 @@
                         generate_message(message, "option");
                         break;
                     case "file":
-                        console.log(message.type);
                         generate_message(message.text, "file");
                         break;
                 };
@@ -257,12 +252,6 @@
             return generate_message("Indicame que otra consulta tenes", "bot");
         }
 
-        if (option_value == "otherOpFile") {
-            var input = document.querySelector("#chat-input");
-            input.style.cursor = "default";
-            return generate_message("Cancelamos la carga del archivo. Indicame que otra consulta tenes", "bot");
-        }
-        //tag
         // Validamos si existe el contexto
         let inpContext = document.querySelector(CONTEXT_DATA);
         // Disponemos una variable temporal para almacenar el contenido del valor
@@ -395,7 +384,7 @@
     }
 
     var click_option = function (e) {
-        if (e.target.valueText == "otherOp" || e.target.valueText == "otherOpFile") {
+        if (e.target.valueText == "otherOp") {
             var contexto = document.querySelector(CONTEXT_DATA);
             document.body.removeChild(contexto);
         }
@@ -477,6 +466,7 @@
         var alertFail = currentMessage.querySelector("#alertFail");
         var alertSuccess = currentMessage.querySelector("#alertSuccess");
         var alertInfo = currentMessage.querySelector("#alertInfo")
+        var upload = currentMessage.querySelector("#upload");
         // Almacenamos el valor del contexto
         let context = document.querySelector(CONTEXT_DATA);
         let contextValue;
@@ -504,7 +494,7 @@
                 xhr.abort();
                 progressBar.style.width = 50 + "%";
                 // Eliminamos la posibilidad de volver a subir
-                $("#upload").prop('disabled', true);
+                $(upload).prop('disabled', true);
                 // Vaciamos el array de files
                 $("#upload").value = "";
                 // Preparamos estilos para indicarle al usuario que los archivos no se pudieron subir
@@ -522,7 +512,7 @@
             if (xhr.status == 200) {
                 // Parseamos a JSON la respuesta por parte del servidor
                 JSONResponse = JSON.parse(xhr.response);
-                console.log("Subida correcta");
+                $(upload).prop('disabled', true);
                 // Aplicamos timeout de 1 seg para que el cambio de color sea visible al usuario
                 setTimeout(function () {
                     progressBar.classList.remove("bg-info");
@@ -540,7 +530,20 @@
                     JSONContext.file_names = JSONResponse.filenames;
                     // Parseamos a string y cambiamos el valor del contexto
                     contextValue = JSON.stringify(JSONContext);
-                    console.log(contextValue);
+        
+                    // Preparamos los datos a enviar
+                    var obj = {
+                        message: "ok",
+                        context: contextValue
+                    }
+                    // Enviamos la solicitud al servidor   
+                    AjaxCall({
+                        url: CHATBOT_URL,
+                        method: CHATBOT_HTTPMETHOD,
+                        callback: RenderResponseMessage,
+                        data: obj,
+                        json: true
+                    });
                 }
             }
         });
@@ -640,7 +643,7 @@
         currentMessage.id = "cm-msg-" + indice;
         chat_logs.appendChild(currentMessage);
     }
-    
+
     var generate_message_file = function (message) {
         var chat_logs = document.querySelector(".chat-logs");
         var currentMessage = chat_msg_file.cloneNode(true);
@@ -656,8 +659,8 @@
             uploadFile(files, currentMessage);
         });
 
-        response.innerHTML = "Por favor, adjuntá un archivo"
-        description.innerHTML = "Click en examinar para adjuntarlo:"
+        response.innerHTML = "Por favor, adjuntá tus archivos"
+        description.innerHTML = "Click en examinar para adjuntarlos:"
 
         currentMessage.id = "cm-msg-" + indice;
         chat_logs.appendChild(currentMessage);
