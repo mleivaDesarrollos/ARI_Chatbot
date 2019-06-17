@@ -14,23 +14,23 @@ module.exports = function(){
     let upload_number = 0;
     
     // Leemos el contenido de la carpeta de subidas
-    fs.readdirSync(UPLOAD_PATH).forEach(file => {    
-        // Validamos que el archivo tenga de nombre UPLOAD + NUMERO
-        if(file.includes(UPLOAD_PREFIX)) {
-            try{
-                // Disponemos una expresión regular para obtener el numero de archivo
-                let rg_get_number = /\d{6}/gmi;                
-                // Removemos los componentes del nombre para dejar solo el número
-                let number = parseInt(file.match(rg_get_number), 10);
-                // Comparamos si el valor actual supera al valor guardado
-                if(number > upload_number){
-                    // Guardamos el valor máximo en la variable
-                    upload_number = number;
-                }
-            } catch (e){
-                console.log("Error obteniendo el proximo número de descarga " + e);
-            }
-    }});
+    // fs.readdirSync(UPLOAD_PATH).forEach(file => {    
+    //     // Validamos que el archivo tenga de nombre UPLOAD + NUMERO
+    //     if(file.includes(UPLOAD_PREFIX)) {
+    //         try{
+    //             // Disponemos una expresión regular para obtener el numero de archivo
+    //             let rg_get_number = /\d{6}/gmi;                
+    //             // Removemos los componentes del nombre para dejar solo el número
+    //             let number = parseInt(file.match(rg_get_number), 10);
+    //             // Comparamos si el valor actual supera al valor guardado
+    //             if(number > upload_number){
+    //                 // Guardamos el valor máximo en la variable
+    //                 upload_number = number;
+    //             }
+    //         } catch (e){
+    //             console.log("Error obteniendo el proximo número de descarga " + e);
+    //         }
+    // }});
     // Una vez localizado el número final de subida le incrementamos por uno
     upload_number++;
     
@@ -110,8 +110,8 @@ module.exports = function(){
                         let file_names = [];
                         // Iteramos sobre los nombres de archivos cargados
                         request.files.forEach(file => 
-                            {
-                                file_names.push(file.filename);
+                            {                                
+                                file_names.push({originalname: file.filename, temporaryname: file.originalname });
                             })
                         // Resolvemos la promesa con el listado de nombre de archivos
                         resolve(file_names);
@@ -123,6 +123,28 @@ module.exports = function(){
         });
         // Devolvemos la promesa cargada
         return promise;
+    }
+
+    this.get_file_buffers_for_request_send = function({file_to_read} = {}){
+        // Disponemos de constantes de logueo
+        let ACTION_LOG = "GetFileBuffersForRequestSend - ";
+        let ERROR_LOG = BASE_ERROR_LOG_PREFIX + ACTION_LOG;
+        // Validamos que los datos de archivo hayan sido comunicados
+        if(file_to_read == undefined) return log.Register(ERROR_LOG + "Faltaron los archivos a leer en la patición.");
+        // Validamos si el nombre de archivo temporal esta cargado
+        if(file_to_read.temporaryname == undefined) return log.Register(ERROR_LOG + "El campo nombre temporal no fue informado debidamente.")
+        try {
+            // Realizamos la lectura de archivo y guardamos en un buffer temporal
+            let buffer = fs.createReadStream(UPLOAD_PATH + '/' + file_to_read.temporaryname);
+            // Almacenamos el buffer en el objeto a devolver
+            file_to_read.buffer = buffer;
+            // Devolvemos el file con el buffer agregado
+            return file_to_read;
+            
+        } catch(e){ 
+            return log.Register(ERROR_LOG + e.message);
+        }
+
     }
     return this;
 }

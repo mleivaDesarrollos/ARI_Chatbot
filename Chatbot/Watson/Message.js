@@ -36,6 +36,7 @@ const OTHER_WORKSTATION = { description: "Otro equipo fuera del listado", value:
 
 const GET_TICKET_CONTEXT_DATA = "require_ticket";
 const GET_WORKSTATION_NUMBER = "require_workstation";
+const REQUIRE_UPLOAD_FILES = "require_attachment";
 const GET_REQUEST_ALL_USER_LOCATIONS = "require_user_locations";
 const GET_TICKET_PLACEHOLDER = "TICKET_NUMBER";
 
@@ -209,6 +210,28 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
         messages: filtered_messages,
         context: caller_context
     };
+}
+
+// Validamos si en la petición llega un requerimiento de subida de archivos
+var CheckUploadFileRequest = function({caller_context, filtered_messages} ={}) {
+    // Averiguamos si dentro del contexto viene la variable de subida de archivos
+    let require_attachment = caller_context.hasOwnProperty(REQUIRE_UPLOAD_FILES);
+
+    if(require_attachment) {
+        // Removemos esta variable del contexto
+        delete caller_context[REQUIRE_UPLOAD_FILES];
+        // Generamos un nuevo mensaje de tipo file
+        let message = {
+            text: "",
+            type: "file"
+        };
+        // Generamos un nuevo array de mensajes con contenido unico este mensaje de tipo file
+        filtered_messages = [message];        
+    }
+    return {
+        messages: filtered_messages,
+        context: caller_context
+    }
 }
 
 var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ caller_context, authorization, filtered_messages }) => {
@@ -388,10 +411,10 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                     var arrMessages = [];
                     // Levantamos todos los mensajes recibidos de respuesta
                     var messages = watsonResponse.output.generic;
-                    var context = watsonResponse.context;
+                    var context = watsonResponse.context;                    
                     // Iteramos sobre todos los mensajes
                     messages.forEach(_message => {
-                        try {
+                        try {                            
                             // Filtramos el mensaje
                             var filtered_message = filter_message_by_type({ message: _message });
                             // Agregamos el mensaje filtrado
@@ -410,6 +433,8 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                     processed_response = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages });
                     // Validamos si dentro del contexto llega una solicitud pidiendo todas las ubicaciones del usuario
                     processed_response = await retrieveUserLocationListOnContextRequest({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages});
+                    // Validamos si en la solicitud viene un pedido de subida de archivos
+                    processed_response = CheckUploadFileRequest({caller_context: context, filtered_messages: arrMessages});
                     // Validamos si la solicitud tiene un requerimiento de reinicio
                     context = CheckAndRestartChat({caller_context: context});
                     // Resolvemos la promise                

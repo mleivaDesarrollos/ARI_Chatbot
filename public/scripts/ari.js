@@ -499,6 +499,7 @@
         xhr.addEventListener('load', () => {
             // Validamos tamaño, cantidad y resp del server
             if (files.length >= MAXIMUM_NUMBER_OF_FILES || totalSize >= MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {
+                console.log(xhr.response)
                 // Abortamos la request
                 xhr.abort();
                 progressBar.style.width = 50 + "%";

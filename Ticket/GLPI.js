@@ -1073,6 +1073,16 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
             if(this._workstation_id) {
                 SetWorkstationOnTicket({session_token: this._mego_token, ticket_id: this._ticket_id, workstation_id: this._workstation_id});
             }
+            
+            // Validamos si se comunico archivos de subida
+            if(this._files_to_upload && this._files_to_upload.length > 0){
+                UploadFilesToGLPI({session_token: this._mego_token, files: this._files_to_upload, ticket_id: this._ticket_id})
+                .then(documents_id => 
+                    LinkDocumentsToTicket({session_token: this._mego_token, documents_id: documents_id, ticket_id: this._ticket_id, user_id: this._user_id})
+                ).catch(error => {
+                    log.Register(GLPI_ERROR_LOG_PREFIX + "Error Linking Document to Ticket - " + error);
+                })
+            }
             // Realizamos una consulta sobre el ticket en cuestión para verificar si tiene grupos asignados.
             return GetGroupTicket({session_token: this._mego_token, ticket_id: this._ticket_id});
         })
