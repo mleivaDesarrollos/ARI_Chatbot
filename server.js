@@ -93,16 +93,16 @@ app.get('/logout', (req, res, next) => {
 });
 
 
-app.use('/login', express.static('./public/login'));
+// app.use('/login', express.static('./public/login'));
 
-app.use(function(req, res, next) {
+// app.use(function(req, res, next) {
 
-    if (req.session.isLogged || req.path.includes("/presentacion/")) {
-        next();
-    } else {
-        res.sendFile(path.join(__dirname + '/public/login/login.html'));
-    }
-});
+//     if (req.session.isLogged || req.path.includes("/presentacion/")) {
+//         next();
+//     } else {
+//         res.sendFile(path.join(__dirname + '/public/login/login.html'));
+//     }
+// });
 
 app.use('/', express.static('./public'));
 
@@ -135,7 +135,8 @@ app.post('/send', (req, res) => {
 
 // Control de rutas para subidas de archivos
 app.post('/upload_documents', (req, res) => {
-    var uploads = require('./upload.js')();    
+    var uploads = require('./upload.js')();
+    
     // Utilizando la libreria Upload, gestionamos la solicitud de subida de archivos
     uploads.upload_multiple_and_return_filenames({request: req, response: res}).then(
         file_names => {                        
