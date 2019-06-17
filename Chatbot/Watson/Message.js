@@ -4,9 +4,9 @@ var log = require('../../Log');
 
 // Definimos constanets
 const predefined_welcome_message = [
-    "Bienvenido, mi nombre es Ari, ¿En qué te ayudo $u?",
-    "Hola, soy Ari y estoy para ayudarte. ¿Que estás necesitando $u?",
-    "Hola $u, soy Ari ¿Te puedo ayudar en algo?"
+    "Bienvenido, mi nombre es Mego, ¿En qué te ayudo $u?",
+    "Hola, soy Mego y estoy para ayudarte. ¿Que estás necesitando $u?",
+    "Hola $u, soy Mego ¿Te puedo ayudar en algo?"
 ];
 
 const predefined_ticket_message = [
@@ -30,7 +30,7 @@ const MESSAGE_SHOW_LOCATIONS = {
 }
 
 // Cuando hay que se hacer carga de otra dirección que no sea las listadas
-const OTHER_LOCATION = { description: "Otra dirección fuera del listado", value: "OTHER_LOCATION" };
+const OTHER_LOCATION = { description: "Otra dirección fuera del listado", value: "OTHER_LOCATION"};
 
 const OTHER_WORKSTATION = { description: "Otro equipo fuera del listado", value: "OTHER_WS" };
 
@@ -43,10 +43,10 @@ const CONTEXT_CONVERSATION_ID = "conversation_id";
 const CONTEXT_SYSTEM = "system";
 const CONTEXT_REQUEST = "is_request";
 
-var filter_message_by_type = function({ message } = {}) {
+var filter_message_by_type = function ({ message } = {}) {
     // Preparamos el mensaje de respuesta
     var return_message = {}
-        // Validamos por tipo de mensaje
+    // Validamos por tipo de mensaje
     switch (message.response_type) {
         case "text":
             // Filtramos el mensaje recibdo
@@ -60,10 +60,10 @@ var filter_message_by_type = function({ message } = {}) {
             message.options.forEach(option => {
                 // Filtramos las opciones
                 var filteredOption = {
-                        description: option.label,
-                        value: option.value.input.text
-                    }
-                    // agregamos la opcion al listado
+                    description: option.label,
+                    value: option.value.input.text
+                }
+                // agregamos la opcion al listado
                 arrOptions.push(filteredOption);
             });
             // Filtramos el mensaje
@@ -80,11 +80,11 @@ var filter_message_by_type = function({ message } = {}) {
     return return_message;
 }
 
-var CheckTicketRequestAndGenerateTicketNumber = async({ caller_context, filtered_messages, authorization }) => {
+var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtered_messages, authorization }) => {
     // Verificamos si Watson nos solicita tickets
     var require_ticket = caller_context.hasOwnProperty(GET_TICKET_CONTEXT_DATA);
     // Validamos si en la petición enviada llego un mensaje donde solicita ticket
-    if (require_ticket) {
+    if (require_ticket) {        
         // var MSC = require("../../Ticket/MSC");
         // Eliminamos la propiedad de requerimiento de ticket para no generar duplicados
         delete caller_context["require_ticket"];
@@ -98,6 +98,8 @@ var CheckTicketRequestAndGenerateTicketNumber = async({ caller_context, filtered
         var request;
         // Variable que se usará en caso de que venga un ID de terminal en contexto
         var terminal_id;
+        // En caso de que se tengan que subir archivos, se dispone una variable para realizar la subida
+        var upload_files;
         // Iteramos sobre los elementos del contexto
         for (var property in caller_context) {
             // Validamos si la propiedad son las bases
@@ -105,21 +107,25 @@ var CheckTicketRequestAndGenerateTicketNumber = async({ caller_context, filtered
                 continue;
             }
             // Validamos si el tipo de problema viene cargado
-            if (property.toLowerCase().includes("tipo_de_problema")) {
+            if (property.toLowerCase().includes("tipo_de_problema")){
                 // Guardamos el tipo de problema como si fuera el título del ticket
                 title = caller_context[property];
             }
+            else if (property.toLocaleLowerCase().includes("filenames")){
+                // Si hay que subir archivos, se guarda en una variable
+                upload_files = caller_context[property];
+            }
             // Validamos si el contexto presente corresponde al ID de terminal
-            else if (property.toLowerCase().includes("terminal_id")) {
-                terminal_id = caller_context[property];
+            else if (property.toLowerCase().includes("terminal_id")){
+                terminal_id = caller_context[property];                
             }
             // Validamos si en la iteración actual viene el id de Categoria
             else if (property.toLowerCase().includes("categoria")) {
                 // Guardamos el contexto en la variable
                 category = caller_context[property];
-            } else if (property.toLowerCase().includes(CONTEXT_REQUEST)) {
+            } else if (property.toLowerCase().includes(CONTEXT_REQUEST)) {                
                 // Si la propiedad viene con valor true
-                if (caller_context[property] == true) {
+                if(caller_context[property] == true){
                     // En este caso necesitamos que el ticket se cargue como solicitud
                     request = true;
                 }
@@ -133,19 +139,19 @@ var CheckTicketRequestAndGenerateTicketNumber = async({ caller_context, filtered
             }
         }
         // Dejamos un acumulador de numero de tickets
-        var ticket = {};
+        var ticket = {} ;
         // Si todos los campos estan cargados
-        if (description && title && category) {
+        if(description && title && category){   
             // Generamos un nuevo ticket usando GLPI
             var GLPIClass = require('../../Ticket/GLPI');
             // Instanciamos un nuevo objeto GLPI
-            var GLPI = new GLPIClass({ user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category, is_req: request, workstation_id: terminal_id });
+            var GLPI = new GLPIClass({user_auth: authorization, tkt_title: title, tkt_description: description, tkt_category: category, is_req: request, workstation_id: terminal_id, files_to_upload: upload_files });
             // Solicitamos la generación de tickets
             await GLPI.CreateTicketAndRetrieveIDAndGroups().then(ticket_result => {
                 // Guardamos las variables recibidas
                 ticket.id = ticket_result.id;
                 ticket.groups = ticket_result.groups;
-            }).catch(function() {
+            }).catch(function(){
                 ticket.id = "ERROR"
             });
         } else {
@@ -153,47 +159,41 @@ var CheckTicketRequestAndGenerateTicketNumber = async({ caller_context, filtered
             ticket.id = "ERROR";
             // Logueamos en sistema
             log.Register("Error - WatsonMessage - En el contexto está faltando la descripción, la categoria o el titulo.");
-        }
-        // // Generamos un nuevo ticket y aguardamos el resultado
-        // await MSC.Get({ message_details: cliente_details }).then((ticketNumber) => 
-        // { ticket_number = ticketNumber })
-        // .catch((error) => {
-        //     ticket_number = "ERROR"
-        // });
+        }   
         // Iteramos sobre los mensajes filtrados
-        for (let i = 0; i < filtered_messages.length; i++) {
+        for(let i = 0; i < filtered_messages.length; i++){
             // Iteramos hasta encontrar el mensaje con el placeholder del ticket
             if (filtered_messages[i].text.includes(GET_TICKET_PLACEHOLDER)) {
                 // Guardamos el mensaje en una variable
                 let message = filtered_messages[i];
                 // Validamos si el mensaje llega en estado error
-                if (ticket.id != "ERROR") {
+                if(ticket.id != "ERROR"){
                     // Preparamos el mensaje de reemplazo
                     let replace_info = ticket.id;
                     // Iteramos sobre los grupos que recibimos
-                    if (ticket.groups != undefined && ticket.groups.length > 0) {
+                    if(ticket.groups != undefined && ticket.groups.length > 0){
                         // Agregamos la info del grupo
                         replace_info += " y esta asignado a ";
                         // Validamos si es mas de un grupo
-                        if (ticket.groups.length > 1) {
+                        if(ticket.groups.length > 1){
                             replace_info += "los grupos ";
                         } else {
                             replace_info += "el grupo ";
                         }
-                        for (let i = 0; i < ticket.groups.length; i++) {
+                        for(let i = 0; i < ticket.groups.length; i++){
                             // Validamos si llegamos al final del recorrido de grupos
-                            if (i + 1 < ticket.groups.length - 1) {
+                            if( i+1 < ticket.groups.length - 1 ){
                                 // Cuando hay mas grupos para agregar agregamos una coma
-                                replace_info += ticket.groups[i] + ", ";
-                            } else if (i + 1 == ticket.groups.length - 1) {
+                                replace_info += ticket.groups[ i ] + ", ";
+                            } else if ( i+1 == ticket.groups.length -1 ) {
                                 // Cuando queda un grupo más por mostrar
-                                replace_info += ticket.groups[i] + " y ";
+                                replace_info += ticket.groups[ i ] + " y ";
                             } else {
                                 // Cuando es el ultimo o unico grupo
-                                replace_info += ticket.groups[i];
+                                replace_info += ticket.groups[ i ];
                             }
                         }
-                    }
+                    }   
                     // Una vez encontrado, reemplazamos el texto con el ticket encontrado
                     message.text = message.text.replace(GET_TICKET_PLACEHOLDER, replace_info);
                 } else {
@@ -211,7 +211,7 @@ var CheckTicketRequestAndGenerateTicketNumber = async({ caller_context, filtered
     };
 }
 
-var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async({ caller_context, authorization, filtered_messages }) => {
+var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ caller_context, authorization, filtered_messages }) => {
     var require_workstation = caller_context.hasOwnProperty(GET_WORKSTATION_NUMBER);
     // Si dentro de las variables de contexto llega la información de que se necesita el equipo, agregamos un mensaje adicional al listado de mensajes
     if (require_workstation) {
@@ -225,7 +225,7 @@ var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async({ c
         // Cargamos la librería de GLPI
         let GLPIClass = require('../../Ticket/GLPI');
         // Instanciamos un nuevo objeto GLPI
-        let GLPI = new GLPIClass({ user_auth: authorization });
+        let GLPI = new GLPIClass({user_auth: authorization});
         // Traemos los equipos relacionados a este usuario
         await GLPI.GetUsersWorkstation().then(ws => arrWorkstations = ws);
         // Duplicamos la instancia de solicitud de mensaje para workstation
@@ -236,10 +236,10 @@ var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async({ c
         arrWorkstations.forEach(workstation => {
             // Agregamos la opcion
             var option = {
-                    description: workstation.name,
-                    value: workstation.id
-                }
-                // Anexamos la opción al array de opciones
+                description: workstation.name,
+                value: workstation.id
+            }
+            // Anexamos la opción al array de opciones
             arrOptions.push(option);
         });
         // Agregamos la opcion de que se trate de un equipo fuera del listado asignado del usuario
@@ -257,7 +257,7 @@ var retrieveUserLocationListOnContextRequest = async({ caller_context, authoriza
     // Verificamos si existe la propiedad que se dispone para pedir todas las ubicaciones
     let require_user_locations = caller_context.hasOwnProperty(GET_REQUEST_ALL_USER_LOCATIONS);
     // Validamos si está definido esta variable, para proceder a contactar a la herramienta de tickets para pedir ubicaciones
-    if (require_user_locations) {
+    if(require_user_locations) {
         // Eliminamos la propiedad para que en proximas solicitudes no vuelva a ingresar
         delete caller_context[GET_REQUEST_ALL_USER_LOCATIONS];
         // Disponemos de la variable de ubicaciones
@@ -265,7 +265,7 @@ var retrieveUserLocationListOnContextRequest = async({ caller_context, authoriza
         // Generamos una nueva instancia de clase GLPI requiriendo la libreria
         let GLPIClass = require('../../Ticket/GLPI');
         // Generamos una nueva instancia de clase para hacer uso de los metodos del módulo
-        let GLPI = new GLPIClass({ user_auth: authorization });
+        let GLPI = new GLPIClass({user_auth: authorization});
         // Disponemos el array donde guardaremos las opciones procesadas
         let options_for_message = [];
         // Generamos la solicitud esperando a que finalice
@@ -298,7 +298,7 @@ var retrieveUserLocationListOnContextRequest = async({ caller_context, authoriza
     }
 }
 
-var CheckUserSendingAddressAndSaveOnContext = function({ caller_context, address_to_send }) {
+var CheckUserSendingAddressAndSaveOnContext = function ({ caller_context, address_to_send }) {
     // Validamos si el usuario esta en tareas de envio de direccion
     if (caller_context.sending_address) {
         // Guardamos la variable de contexto para que la visualice watson
@@ -310,13 +310,13 @@ var CheckUserSendingAddressAndSaveOnContext = function({ caller_context, address
     return caller_context;
 }
 
-var CheckAndRestartChat = function({ caller_context }) {
+var CheckAndRestartChat = function({caller_context}){
     // Validamos si en en el contexto viaja la reinicialización del chat
-    if (caller_context.restart_chat) {
+    if(caller_context.restart_chat){
         // Iteramos sobre todas las propiedades guardadas
-        for (property in caller_context) {
+        for(property in caller_context){
             // Validamos si son las propiedades básicas de watson
-            if (property == CONTEXT_CONVERSATION_ID || property == CONTEXT_SYSTEM) {
+            if(property == CONTEXT_CONVERSATION_ID || property == CONTEXT_SYSTEM){
                 continue;
             }
             // Llegando a esta instancia, significa que estas propiedades pueden ser eliminadas
@@ -328,7 +328,7 @@ var CheckAndRestartChat = function({ caller_context }) {
 }
 
 // Disponemos el método para obtener la información
-var getData = function(messageToConvert, context) {
+var getData = function (messageToConvert, context) {
     var body = {
         input: {
             text: messageToConvert
@@ -345,7 +345,7 @@ var getData = function(messageToConvert, context) {
 // Una de los posibles formateos debería ser : detectar en los intents si se inicio por microinformatica, infraestructura, o administrativo
 // Este mensaje se enviará al cliente como respuesta. El mensaje debe enviarlo la funcion mensaje
 
-module.exports = function({ param_workspace, param_version, param_headers, param_username, param_firstname, param_fullname, param_auth } = {}) {
+module.exports = function ({ param_workspace, param_version, param_headers, param_username, param_firstname, param_fullname, param_auth } = {}) {
     // Validamos si la información viene cargada correctamente
     if (param_workspace == undefined || param_version == undefined) throw 'No es posible generar instancia de mensaje sin Workspace y Version';
     // Almacenamos los elementos en sus correspondientes ubicaciones
@@ -357,16 +357,16 @@ module.exports = function({ param_workspace, param_version, param_headers, param
     this._fullname = param_fullname;
     this._auth = param_auth;
     // Método que controla los mensajes
-    this.message = function({ userInput, context } = {}) {
+    this.message = function ({ userInput, context } = {}) {
         // Configuramos el URI para poder realizar las consultas a la API
         const URI = "https://gateway.watsonplatform.net/assistant/api/v1/workspaces/" + this._workspace + "/message?version=" + this._version;
         // Definimos método        
         const METHOD = "POST";
-        var promise = new Promise(async(resolve, reject) => {
+        var promise = new Promise(async (resolve, reject) => {
             // Validamos si el mensaje viene vacio
             if (userInput != '' && userInput != undefined) {
                 // Validamos si la solicitud viaja con la terminal
-                if (context != undefined) {
+                if (context != undefined) {                                        
                     // Validamos si el usuario está enviando las direcciones
                     context = CheckUserSendingAddressAndSaveOnContext({ caller_context: context, address_to_send: userInput });
                 }
@@ -376,7 +376,7 @@ module.exports = function({ param_workspace, param_version, param_headers, param
                     uri: URI,
                     method: METHOD,
                     body: getData(userInput, context)
-                }, async(err, response, watsonResponse) => {
+                }, async (err, response, watsonResponse) => {
                     // Validamos si la petición viene con errores
                     if (err) {
                         return reject("Error: Se ha producido un error al enviar mensaje: " + err);
@@ -409,9 +409,9 @@ module.exports = function({ param_workspace, param_version, param_headers, param
                     // Validamos si dentro del contexto llega una solicitud
                     processed_response = await CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages });
                     // Validamos si dentro del contexto llega una solicitud pidiendo todas las ubicaciones del usuario
-                    processed_response = await retrieveUserLocationListOnContextRequest({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages });
+                    processed_response = await retrieveUserLocationListOnContextRequest({ caller_context: context, authorization: this._auth, filtered_messages: arrMessages});
                     // Validamos si la solicitud tiene un requerimiento de reinicio
-                    context = CheckAndRestartChat({ caller_context: context });
+                    context = CheckAndRestartChat({caller_context: context});
                     // Resolvemos la promise                
                     resolve(processed_response);
                 });
@@ -428,9 +428,9 @@ module.exports = function({ param_workspace, param_version, param_headers, param
                 }
                 // Preparamos el objeto JSON para enviar
                 var finalMessage = {
-                        messages: [{ type: "text", text: msg }]
-                    }
-                    // Resolvemos con contenido del mensaje
+                    messages: [{ type: "text", text: msg }]
+                }
+                // Resolvemos con contenido del mensaje
                 resolve(finalMessage);
             }
         });
