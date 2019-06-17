@@ -138,6 +138,8 @@ var CheckTicketRequestAndGenerateTicketNumber = async ({ caller_context, filtere
                 // Almacenamos la información dentro del ticket
                 description += "-" + label + " : " + information + "\n";
             }
+            // Eliminamos la propiedad procesada del contexto
+            delete caller_context[property];
         }
         // Dejamos un acumulador de numero de tickets
         var ticket = {} ;

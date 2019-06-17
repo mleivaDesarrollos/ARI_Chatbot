@@ -39,7 +39,7 @@ module.exports = function(){
         destination: function(req, file, callback) {
             callback(null, UPLOAD_PATH);
         },
-        filename: function(req, file, callback) {          
+        filename: function(req, file, callback) {            
             let extension = file.originalname.match(/\.[^\.*]*$/gmi);
             if(extension == null) {
                 // A los archivos sin extension se le pondrá por defecto como txt
@@ -133,11 +133,17 @@ module.exports = function(){
         if(file_to_read == undefined) return log.Register(ERROR_LOG + "Faltaron los archivos a leer en la patición.");
         // Validamos si el nombre de archivo temporal esta cargado
         if(file_to_read.temporaryname == undefined) return log.Register(ERROR_LOG + "El campo nombre temporal no fue informado debidamente.")
-        try {            
+        try {         
+            // Preparamos el path del archivo
+            let path = UPLOAD_PATH + '/' + file_to_read.temporaryname;
             // Realizamos la lectura de archivo y guardamos en un buffer temporal
-            let buffer = fs.createReadStream(UPLOAD_PATH + '/' + file_to_read.temporaryname);
+            let buffer = fs.createReadStream(path);
             // Almacenamos el buffer en el objeto a devolver
             file_to_read.buffer = buffer;
+            // Como el archivo ya no se necesita, se procede a eliminar del directorio temporal
+            fs.unlink(path, function(err) {
+                if(err) log.Register(ACTION_LOG + "No se pudo eliminar archivo " + file_to_read.temporaryname + " de la ruta " + UPLOAD_PATH + ". Detalle: " + err );
+            });
             // Devolvemos el file con el buffer agregado
             return file_to_read;
             

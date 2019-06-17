@@ -15,9 +15,9 @@
     // Prefijo de error
     const GLPI_ERROR_LOG_PREFIX = "Error: GLPi - ";
     // Clave y usuario de MEGO
-    const MEGO_AUTHORIZATION = "bWVnbzpNZWdvMjAxOS4=";
+    const MEGO_AUTHORIZATION = "QVJJQk9UOklyYTIwMTk=";
     // Id cargado en base de datos de GLPi, modificar en caso de producirse un cambio en base de datos
-    const MEGO_GLPI_ID = 37;
+    const MEGO_GLPI_ID = 98;
     // Id de perfil de empleado
     const EMPLOYEE_PROFILE = 9;
     // Mensaje preestablecido de cierre de tickets en GLPi
@@ -320,6 +320,8 @@ function get_formdata_request_upload_file({up_file, tkt_id} ={}){
         formData["uploadManifest"] = '{"input" : {"name":"Documentar incidente ' + tkt_id + '", "_filename": "[' + file_upload.originalname + ']"}}';
         formData["type"] = "application/json";
         formData["filename[0]"] = { value: file_upload.buffer, options: {filename: file_upload.originalname}};
+        // El buffer una vez utilizado lo liberamos
+        delete file_upload["buffer"];
         // Devolvemos el formdata procesado
         return formData;
     } else {
@@ -483,7 +485,6 @@ let UploadFilesToGLPI = async({session_token, files, ticket_id} ={}) => {
                     if(is_request_ok({statusCode: response.statusCode})) {
                         // Parseamos el objeto recibido
                         let document_json = JSON.parse(body);
-                        console.log(document_json);
                         // Pusheamos el id sobre el array de documentos
                         document_id.push(document_json.id);
                         resolve("ok")
@@ -553,7 +554,6 @@ function LinkDocumentsToTicket({session_token, ticket_id, documents_id, user_id}
         if(documents_id == undefined || documents_id.length < 1) return reject(log.Register(ERROR_LOG + "Esta faltando los ID de documentos a vincular."));
         // Obtenemos la cabecera estandard de tickets
         let header = get_token_headers({s_token: session_token});
-        console.log(documents_id);
         // Iteramos sobre todos los documentos        
         for(let documentIndex = 0; documentIndex < documents_id.length; documentIndex++){
             // Obtenemos el id del documento
@@ -1073,7 +1073,6 @@ module.exports = function({user_auth, tkt_title, tkt_description, tkt_category, 
             
             // Validamos si se comunico archivos de subida
             if(this._files_to_upload && this._files_to_upload.length > 0){
-                console.log(this._files_to_upload);
                 UploadFilesToGLPI({session_token: this._mego_token, files: this._files_to_upload, ticket_id: this._ticket_id})
                 .then(documents_id => 
                     LinkDocumentsToTicket({session_token: this._mego_token, documents_id: documents_id, ticket_id: this._ticket_id, user_id: this._user_id})
