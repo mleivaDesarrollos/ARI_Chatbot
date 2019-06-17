@@ -4,9 +4,9 @@ var log = require('../../Log');
 
 // Definimos constanets
 const predefined_welcome_message = [
-    "Bienvenido, mi nombre es Mego, ¿En qué te ayudo $u?",
-    "Hola, soy Mego y estoy para ayudarte. ¿Que estás necesitando $u?",
-    "Hola $u, soy Mego ¿Te puedo ayudar en algo?"
+    "Bienvenido, mi nombre es ARI, ¿En qué te ayudo $u?",
+    "Hola, soy ARI y estoy para ayudarte. ¿Que estás necesitando $u?",
+    "Hola $u, soy ARI ¿Te puedo ayudar en algo?"
 ];
 
 const predefined_ticket_message = [
