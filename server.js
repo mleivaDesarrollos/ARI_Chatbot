@@ -8,6 +8,7 @@ var fs = require('fs');
 var http = require('http');
 var https = require('https');
 var path = require('path');
+var uploads = require('./upload.js')();
 
 // Cargamos libreria para parsear formularios por post
 var bodyParser = require('body-parser');
@@ -136,7 +137,6 @@ app.post('/send', (req, res) => {
 
 // Control de rutas para subidas de archivos
 app.post('/upload_documents', (req, res) => {
-    var uploads = require('./upload.js')();
 
     // Utilizando la libreria Upload, gestionamos la solicitud de subida de archivos
     uploads.upload_multiple_and_return_filenames({ request: req, response: res }).then(
@@ -145,7 +145,8 @@ app.post('/upload_documents', (req, res) => {
         }).catch(e => {
             res.status(400).json({ filenames: [], message: e.message });
         })
-})
+});
+uploads.StartCheckUploadFolder();
 
 // Lanzamos la escucha sobre el puerto indicado
 server.listen(PORT_STANDARD);

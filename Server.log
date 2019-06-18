@@ -21,3 +21,6 @@
 17-06-2019 15:31:50      Error: GLPi - Error Linking Document to Ticket - undefined
 17-06-2019 15:34:52      Error: GLPi - LinkDocumentsToTicket - Esta faltando los ID de documentos a vincular.
 17-06-2019 15:34:52      Error: GLPi - Error Linking Document to Ticket - undefined
+18-06-2019 17:20:59      GetFileBuffersForRequestSend - No se pudo eliminar archivo UPLOAD001!18-06-2019_17-20-21.7z de la ruta ./uploads. Detalle: Error: ENOENT: no such file or directory, unlink 'G:\Proyectos\ari\uploads\UPLOAD001!18-06-2019_17-20-21.7z'
+18-06-2019 17:20:59      Error: GLPi - UploadFilesToGLPI - Error subiendo 7ZIP - copia.7z con nombre temporal UPLOAD001!18-06-2019_17-20-21.7z. Detalle: form-data: ENOENT: no such file or directory, open 'G:\Proyectos\ari\uploads\UPLOAD001!18-06-2019_17-20-21.7z'
+18-06-2019 17:20:59      Error: GLPi - Error Linking Document to Ticket - undefined

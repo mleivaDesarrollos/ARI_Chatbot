@@ -297,10 +297,17 @@
         }
         // Preparamos los datos para enviar
         var info = {
+<<<<<<< HEAD
                 message: _msg_value,
                 context: contextValue
             }
             // Preparamos la solicitud ajax para hacer el envío de información        
+=======
+            message: _msg_value,
+            context: contextValue
+        }        
+        // Preparamos la solicitud ajax para hacer el envío de información        
+>>>>>>> 392286244db9f9f885fbbaf7580249bf6156165d
         AjaxCall({
             url: CHATBOT_URL,
             method: CHATBOT_HTTPMETHOD,
@@ -498,8 +505,7 @@
         xhr.open('POST', '/upload_documents');
         xhr.addEventListener('load', () => {
             // Validamos tamaño, cantidad y resp del server
-            if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {
-                console.log(files.length);
+            if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {                
                 // Abortamos la request
                 xhr.abort();
                 progressBar.style.width = 50 + "%";
