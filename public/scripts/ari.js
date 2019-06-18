@@ -464,6 +464,8 @@
         var alertSuccess = currentMessage.querySelector("#alertSuccess");
         var alertInfo = currentMessage.querySelector("#alertInfo")
         var upload = currentMessage.querySelector("#upload");
+        // Capturamos el boton de reintentar
+        var retry = currentMessage.querySelector("#retry");
         // Almacenamos el valor del contexto
         let context = document.querySelector(CONTEXT_DATA);
         let contextValue;
@@ -490,31 +492,60 @@
                 // Abortamos la request
                 xhr.abort();
                 progressBar.style.width = 50 + "%";
+                 // Vaciamos el array de files
+                 upload.value = "";
                 // Eliminamos la posibilidad de volver a subir
                 $(upload).prop('disabled', true);
-                // Vaciamos el array de files
-                $("#upload").value = "";
                 // Preparamos estilos para indicarle al usuario que los archivos no se pudieron subir
                 setTimeout(function () {
+                    // Removemos progress comun
                     progressBar.classList.remove("bg-info");
+                    // Agregamos el progress de error
                     progressBar.classList.add("bg-danger");
+                    // Ocultamos el alerta comun
                     alertInfo.classList.add("d-none");
+                    alertInfo.classList.remove("d-block")
+                    // Mostramos el alerta de error
                     alertFail.classList.remove("d-none");
                     alertFail.classList.add("d-block");
+                    // Mostramos el boton de error
+                    retry.classList.remove("d-none");
+                    retry.classList.add("d-block");
                 }, 500);
-                // Borramos contexto
-                document.body.removeChild(context);
-            }
 
+                retry.addEventListener("click", () => {
+                    // Colocamos la barra de progreso en su estado original
+                    progressBar.style.width = 0 + "%";
+                    progressBar.classList.remove("bg-danger");
+                    progressBar.classList.add("bg-info");
+                    // Ocultamos el boton
+                    retry.classList.remove("d-block");
+                    retry.classList.add("d-none");
+                    // Activamos el input nuevamente
+                    $(upload).prop('disabled', false);
+                    // Ocultamos el alert de error
+                    alertFail.classList.remove("d-block");
+                    alertFail.classList.add("d-none");
+                    // Mostramos el alert comun
+                    alertInfo.classList.remove("d-none");
+                    alertInfo.classList.add("d-block");
+                });
+
+            }
+            
             if (xhr.status == 200) {
                 // Parseamos a JSON la respuesta por parte del servidor
                 JSONResponse = JSON.parse(xhr.response);
                 $(upload).prop('disabled', true);
                 // Aplicamos timeout de 1 seg para que el cambio de color sea visible al usuario
                 setTimeout(function () {
+                    // Cambiamos el color de la barra de progreso a verde
                     progressBar.classList.remove("bg-info");
                     progressBar.classList.add("bg-success");
+                    // Ocultamos el alert comun
+                    alertInfo.classList.remove("d-block");
                     alertInfo.classList.add("d-none");
+                    // Mostramos el alert que indica la subida de archivos con exito
                     alertSuccess.classList.remove("d-none");
                     alertSuccess.classList.add("d-block");
                 }, 1000);
@@ -527,7 +558,6 @@
                     JSONContext.file_names = JSONResponse.filenames;
                     // Parseamos a string y cambiamos el valor del contexto
                     contextValue = JSON.stringify(JSONContext);
-        
                     // Preparamos los datos a enviar
                     var obj = {
                         message: "ok",
