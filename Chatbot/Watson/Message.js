@@ -258,7 +258,7 @@ var CleanTemporaryUploadedFiles = function({caller_context} = {}) {
         upload.remove_temporary_files({files_to_remove: caller_context[CONTEXT_VAR_FILENAMES]});
         // Eliminamos las variables de contexto del objeto
         delete caller_context[CONTEXT_VAR_FILENAMES];   
-        delete caller_context[CLEAN_TEMPORARY_FILES];
+        //delete caller_context[CLEAN_TEMPORARY_FILES];
     }
     // Devolvemos el contexto procesado
     return caller_context;
