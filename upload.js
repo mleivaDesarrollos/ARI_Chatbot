@@ -11,7 +11,30 @@ module.exports = function(){
     const UPLOAD_MULTIPLE_FIELD = "upload_file[]";
     const SUPPORTED_FORMATS = ['text/plain', 'image', 'spreadsheet', 'pdf', 'wordprocessing', 'msword', 'excel', 'powerpoint', 'presentation', 'octet-stream', 'zip']
     const BASE_ERROR_LOG_PREFIX = "ERROR - UploadModule - ";
+    const INTERVAL_CHECK_UPLOAD_FOLDER =  5 * 1000 * 60; // 5 Minutos
+    const MAX_PRESERVE_TIME = 5 * 1000 * 60; // 5 Minutos
+
+    const REMOVE_CHARACTERS_FROM_UPLOAD_FILE = /(?:UPLOAD\d{3}!|\..+)/gmi;
+    const GET_DATE_FROM_FILENAME = /^(\d{2})-(\d{2})-(\d{4})/g;
+    const GET_TIME_FROM_FILENAME = /(\d{2})-(\d{2})-(\d{2})$/g;
+    const IS_UPLOAD_FILE = /UPLOAD/gmi;
+
     let upload_number = 0;
+    
+    function get_date_for_filenames(){
+        // Obtenemos la fecha actual
+        let current_date = new Date();
+        // Separamos en componentes
+        let day = String(current_date.getDate()).padStart(2,'0');
+        let month = String(current_date.getMonth() +1).padStart(2,'0');
+        let year = current_date.getFullYear();
+
+        let hour = String(current_date.getHours()).padStart(2, '0');
+        let minute = String(current_date.getMinutes()).padStart(2, '0');
+        let seconds = String(current_date.getSeconds()).padStart(2, '0');
+        // Devolvemos el valor procesado
+        return day + "-"+ month + "-" + year + "_" + hour + "-" + minute + "-" + seconds;
+    }
     
     // Leemos el contenido de la carpeta de subidas
     fs.readdirSync(UPLOAD_PATH).forEach(file => {    
@@ -45,7 +68,8 @@ module.exports = function(){
                 // A los archivos sin extension se le pondrá por defecto como txt
                 extension = ".txt";
             }
-            callback(null, UPLOAD_PREFIX + String(upload_number).padStart(6, '0') + extension);
+            // Obtenemos la fecha actual
+            callback(null, UPLOAD_PREFIX + String(upload_number).padStart(3, '0') + "!" + get_date_for_filenames() + extension);
             upload_number++;                
         }    
     });
@@ -112,7 +136,9 @@ module.exports = function(){
                         request.files.forEach(file => 
                             {                                
                                 file_names.push({originalname: file.originalname , temporaryname: file.filename});
-                            })
+                            });
+                        // Iniciamos el chequeo de archivos temporarios
+                        this.StartCheckUploadFolder();
                         // Resolvemos la promesa con el listado de nombre de archivos
                         resolve(file_names);
                     } else { 
@@ -144,6 +170,8 @@ module.exports = function(){
             fs.unlink(path, function(err) {
                 if(err) log.Register(ACTION_LOG + "No se pudo eliminar archivo " + file_to_read.temporaryname + " de la ruta " + UPLOAD_PATH + ". Detalle: " + err );
             });
+            // Validamos si existen mas archivos para desvincular
+            CheckIsFilesPendingToSend();            
             // Devolvemos el file con el buffer agregado
             return file_to_read;
             
@@ -168,6 +196,75 @@ module.exports = function(){
             fs.unlink(path, (err) => { 
                 if(err) log.Register(ERROR_LOG + "Error al eliminar archivo " + file.temporaryname + " con nombre real " + file.originalname + ". Error: " + err);
             });
+        }
+    }
+
+    let RemoveTemporaryUploadFiles = function() {        
+        // Disponemos de la variable para log
+        let ACTION_LOG = "CheckUploadFolder - ";
+        let ERROR_LOG = BASE_ERROR_LOG_PREFIX + ACTION_LOG;
+        fs.readdirSync(UPLOAD_PATH).forEach(file => {
+            // Iteramos sobre toda la carpeta de archivos
+            if(file.match(IS_UPLOAD_FILE)){
+                // Si el archivo es de formato de subida de archivos
+
+                // Removemos parte del archivo que no contenga fecha y hora
+                let cleaned_date = file.replace(REMOVE_CHARACTERS_FROM_UPLOAD_FILE, '');
+                
+                // Obtenemos la sección de la fecha en el nombre de archivo
+                let date = cleaned_date.match(GET_DATE_FROM_FILENAME)[0];
+                // Obtenemos la sección del horario del archivo
+                let time = cleaned_date.match(GET_TIME_FROM_FILENAME)[0];
+                
+                // Dividimos la fecha en Dia/MES/AÑO
+                let splitted_date = date.split('-');
+                // Dividimos la hora en Horas/Minutos/Segundos
+                let splitted_time = time.split('-');
+                
+                // Construimos formato fecha en base a los componentes de fecha y hora                
+                let file_date = new Date(splitted_date[2], splitted_date[1] - 1, splitted_date[0], splitted_time[0], splitted_time[1], splitted_time[2]);
+                
+                // Obtenemos la fecha actual
+                current_date = new Date().getTime();
+        
+                // Calculamos la diferencia entre la fecha del archivo y la fecha actual
+                let difference = current_date - file_date;
+                
+                if(difference > MAX_PRESERVE_TIME) {
+                    // Si la fecha supera el máximo de tiempo de preservación
+                    fs.unlinkSync(UPLOAD_PATH + "/" + file)
+                }
+            }
+        });
+        // Llamamos a la función que comprobará si aún hay archivos pendientes para enviar
+        CheckIsFilesPendingToSend();
+    }
+
+    this.StartCheckUploadFolder = function(){        
+        // Al llamar esta función se llama a iniciar el chequeo de intervalos
+        this.interval = setInterval(RemoveTemporaryUploadFiles, INTERVAL_CHECK_UPLOAD_FOLDER);
+    }
+
+    var CheckIsFilesPendingToSend = function() {
+        // Disponemos un acumulador que cuente los archivos
+        let is_files_pending_to_send = false;
+        // Iteramos sobre la carpeta
+        let files = fs.readdirSync(UPLOAD_PATH);
+        // Iteramos sobre todos los archivos encontrados
+        for(let filesIndex = 0; filesIndex < files.length; filesIndex++){
+            // Separamos el archivo
+            let file = files[filesIndex];
+            // Validamos si el archivo cumple con el requisito de archivo de subida
+            if(file.match(IS_UPLOAD_FILE)){
+                // En caso de ser encontrado se rompe con el ciclo
+                is_files_pending_to_send = true;
+                break;
+            }
+        }            
+        // Validamos si el total de subidas de archivos fue 0
+        if(is_files_pending_to_send == false){
+            // Detenemos el chequeo llegado el caso de no encontrar mas archivos de subidas temporales
+            clearInterval(this.interval);            
         }
     }
     return this;

@@ -16,6 +16,7 @@
     "express": "^4.16.4",
     "express-session": "^1.15.6",
     "ldapjs": "^1.0.2",
-    "multer": "^1.4.1"
+    "multer": "^1.4.1",
+    "request": "^2.88.0"
   }
 }
