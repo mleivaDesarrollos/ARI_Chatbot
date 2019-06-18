@@ -150,7 +150,25 @@ module.exports = function(){
         } catch(e){ 
             return log.Register(ERROR_LOG + e.message);
         }
+    }
 
+    this.remove_temporary_files = function({files_to_remove} ={}){
+        // Disponemos de las variables de logueo
+        let ACTION_LOG = "RemoveTemporaryFiles - ";
+        let ERROR_LOG = BASE_ERROR_LOG_PREFIX + ACTION_LOG;
+        // Validamos si se han comunicado los nombres de archivo a remover
+        if(files_to_remove == undefined) return log.Register(ERROR_LOG + "No se comunicaron correctamente los nombres de archivo a desvincular");
+        // Iteramos sobre todos los archivos recibidos
+        for(let filesIndex = 0; filesIndex < files_to_remove.length; filesIndex++){
+            // Separamos el archivo en una variable particular
+            let file = files_to_remove[filesIndex];
+            // Preparamos la ruta del archivo a eliminar
+            let path = UPLOAD_PATH + '/' + file.temporaryname;
+            // Ejecutamos la remoción efectiva del archivo
+            fs.unlink(path, (err) => { 
+                if(err) log.Register(ERROR_LOG + "Error al eliminar archivo " + file.temporaryname + " con nombre real " + file.originalname + ". Error: " + err);
+            });
+        }
     }
     return this;
 }
