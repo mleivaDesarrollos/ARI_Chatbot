@@ -192,16 +192,23 @@
                 isResetingChat = true;
                 stop_inactivity_check();
             };
+
+            if (JsonResp.context.clean_temporary_files) {
+                var chatLogs = document.querySelectorAll(".chat-msg");
+                console.log(chatLogs);
+                lastChat = chatLogs[chatLogs.length - 1];
+                anteLastChat = chatLogs[chatLogs.length - 2];
+                anteAnteLastChat = chatLogs[chatLogs.length - 3];
+                lastChat.parentNode.removeChild(lastChat);
+                anteLastChat.parentNode.removeChild(anteLastChat);
+                anteAnteLastChat.parentNode.removeChild(anteAnteLastChat);
+
+            }
         }
         // Iniciamos la distribución de mensajes acumulados
         send_stacked_messages(isResetingChat);
 
         if (inpContext == undefined && JsonResp.context != undefined) {
-            if (JsonResp.context.file_names == undefined) {
-                console.log("No existe");
-            } else {
-                console.log("Existe");
-            }
             // Generamos un elemento
             inpContext = document.createElement('input')
                 // Definimos los parametros del elemento
@@ -297,17 +304,10 @@
         }
         // Preparamos los datos para enviar
         var info = {
-<<<<<<< HEAD
                 message: _msg_value,
                 context: contextValue
             }
             // Preparamos la solicitud ajax para hacer el envío de información        
-=======
-            message: _msg_value,
-            context: contextValue
-        }        
-        // Preparamos la solicitud ajax para hacer el envío de información        
->>>>>>> 392286244db9f9f885fbbaf7580249bf6156165d
         AjaxCall({
             url: CHATBOT_URL,
             method: CHATBOT_HTTPMETHOD,
@@ -505,7 +505,7 @@
         xhr.open('POST', '/upload_documents');
         xhr.addEventListener('load', () => {
             // Validamos tamaño, cantidad y resp del server
-            if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {                
+            if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {
                 // Abortamos la request
                 xhr.abort();
                 progressBar.style.width = 50 + "%";
