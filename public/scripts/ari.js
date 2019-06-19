@@ -95,11 +95,11 @@
         xhr.addEventListener('load', () => {
             if (xhr.status == 200) {
                 callback(xhr.response);
-            } else if(xhr.status == 400){
+            } else if (xhr.status == 400) {
                 errorCallback(xhr.response);
             }
         });
-        if(uploadCallback) {
+        if (uploadCallback) {
             xhr.upload.addEventListener("progress", uploadCallback);
         }
         // Si la petición llega por medio de JSON, se hace string
@@ -214,7 +214,7 @@
                 delete JsonResp.context.clean_temporary_files;
 
                 penultimateMessage.defaultStyle();
-                
+
             }
         }
         // Iniciamos la distribución de mensajes acumulados
@@ -481,13 +481,17 @@
             scrollTop: $(".chat-logs")[0].scrollHeight
         }, 1000);
 
+        if (type == 'bot' || type == 'option' || type == 'file') {
+            send_stacked_messages();
+        }
+
         indice++;
     }
 
     let uploadFile = function(files) {
         let formData = new FormData();
         let xhr = new XMLHttpRequest();
-        
+
 
         // Controlamos el progreso de la subida de archivo
         xhr.upload.addEventListener("progress", (event) => {
@@ -499,10 +503,10 @@
         xhr.open('POST', '/upload_documents');
         xhr.addEventListener('load', () => {
             // Validamos tamaño, cantidad y resp del server
-            
+
 
             if (xhr.status == 200) {
-                
+
             }
         });
         xhr.send(formData);
@@ -624,7 +628,7 @@
             let porcentaje = Math.round((event.loaded / event.total) * 100);
             progressBar.style.width = porcentaje + "%";
         }
-        currentMessage.defaultStyle = function (){
+        currentMessage.defaultStyle = function() {
             // Colocamos la barra de progreso en su estado original
             progressBar.style.width = 0 + "%";
             progressBar.classList.remove("bg-danger");
@@ -646,7 +650,7 @@
         }
 
         // Encapsulamos codigos, nos permitirá reutilizarlo para validar si existe name_files
-        currentMessage.alertStyle = function() {            
+        currentMessage.alertStyle = function() {
             // Preparamos estilos para indicarle al usuario que los archivos no se pudieron subir
             setTimeout(function() {
                 // Removemos progress comun
@@ -665,7 +669,7 @@
             }, 500);
         }
 
-        currentMessage.successStyle = function (){
+        currentMessage.successStyle = function() {
             // Aplicamos timeout de 1 seg para que el cambio de color sea visible al usuario
             setTimeout(function() {
                 // Cambiamos el color de la barra de progreso a verde
@@ -678,7 +682,7 @@
                 alertSuccess.classList.remove("d-none");
                 alertSuccess.classList.add("d-block");
             }, 1000);
-        }        
+        }
 
         currentMessage.successCallback = function(response) {
             // Parseamos a JSON la respuesta por parte del servidor
@@ -688,7 +692,7 @@
             let context = document.querySelector(CONTEXT_DATA);
             let contextValue;
 
-            $(upload).prop('disabled', true);            
+            $(upload).prop('disabled', true);
 
             if (response != undefined && context != undefined) {
                 // Guardamos el valor del contexto una vez comprobado que es distinto de undefined
@@ -714,13 +718,13 @@
             }
         }
 
-        $(submit).prop('disabled', false);        
+        $(submit).prop('disabled', false);
 
         // Verificamos si algo cambia en el input
         inputButton.addEventListener('change', e => {
             let files = e.target.files;
             // Creamos el formdata para hacer envios
-            let data = new FormData();            
+            let data = new FormData();
             // Acumulamos de manera recursiva los archivos
             for (let i = 0; i < files.length; i++) {
                 totalSize += files[i].size / 1024 / 1024;
@@ -734,21 +738,21 @@
                     upload.value = "";
                     // Eliminamos la posibilidad de volver a subir
                     $(upload).prop('disabled', true);
-                    
+
                     currentMessage.alertStyle();
-        
+
                     retry.addEventListener("click", () => {
                         currentMessage.defaultStyle();
                     });
                 }
             }
             AjaxCall({
-                url:"/upload_documents",
-                method: "post", 
-                callback: currentMessage.successCallback, 
-                data: data, 
-                uploadCallback: currentMessage.uploadCallback, 
-                errorCallback: currentMessage.errorCallback 
+                url: "/upload_documents",
+                method: "post",
+                callback: currentMessage.successCallback,
+                data: data,
+                uploadCallback: currentMessage.uploadCallback,
+                errorCallback: currentMessage.errorCallback
             })
         });
 
