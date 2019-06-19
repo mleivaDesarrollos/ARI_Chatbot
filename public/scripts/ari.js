@@ -86,15 +86,22 @@
         method,
         callback,
         data,
-        json
+        json,
+        uploadCallback,
+        errorCallback
     } = {}) {
         let xhr = new XMLHttpRequest();
         xhr.open(method, url);
         xhr.addEventListener('load', () => {
             if (xhr.status == 200) {
                 callback(xhr.response);
+            } else if(xhr.status == 400){
+                errorCallback(xhr.response);
             }
         });
+        if(uploadCallback) {
+            xhr.upload.addEventListener("progress", uploadCallback);
+        }
         // Si la petición llega por medio de JSON, se hace string
         if (json == true) {
             xhr.setRequestHeader('Content-Type', 'application/json');
@@ -205,8 +212,9 @@
                 lastMessage.parentNode.removeChild(lastMessage);
                 antenmousMessage.parentNode.removeChild(antenmousMessage);
                 delete JsonResp.context.clean_temporary_files;
-                // defaultMessageFile();
-                //anteAnteLastChat.parentNode.removeChild(anteAnteLastChat);
+
+                penultimateMessage.defaultStyle();
+                
             }
         }
         // Iniciamos la distribución de mensajes acumulados
@@ -476,28 +484,10 @@
         indice++;
     }
 
-    let uploadFile = function(files, currentMessage) {
+    let uploadFile = function(files) {
         let formData = new FormData();
         let xhr = new XMLHttpRequest();
-        // Capturamos la barra de progreso
-        let progressBar = currentMessage.querySelector("#progressBar");
-        // Capturamos elementos que reportaran si se sube el archivo o no
-        var alertFail = currentMessage.querySelector("#alertFail");
-        var alertSuccess = currentMessage.querySelector("#alertSuccess");
-        var alertInfo = currentMessage.querySelector("#alertInfo")
-        var upload = currentMessage.querySelector("#upload");
-        // Capturamos el boton de reintentar
-        var retry = currentMessage.querySelector("#retry");
-        // Almacenamos el valor del contexto
-        let context = document.querySelector(CONTEXT_DATA);
-        let contextValue;
-        var totalSize = 0;
-
-        // Acumulamos de manera recursiva los archivos
-        for (let i = 0; i < files.length; i++) {
-            totalSize += files[i].size / 1024 / 1024;
-            formData.append("upload_file[]", files[i]);
-        }
+        
 
         // Controlamos el progreso de la subida de archivo
         xhr.upload.addEventListener("progress", (event) => {
@@ -509,94 +499,10 @@
         xhr.open('POST', '/upload_documents');
         xhr.addEventListener('load', () => {
             // Validamos tamaño, cantidad y resp del server
-            if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES || xhr.status == 400) {
-                // Abortamos la request
-                xhr.abort();
-                progressBar.style.width = 50 + "%";
-                // Vaciamos el array de files
-                upload.value = "";
-                // Eliminamos la posibilidad de volver a subir
-                $(upload).prop('disabled', true);
-                // Preparamos estilos para indicarle al usuario que los archivos no se pudieron subir
-                setTimeout(function() {
-                    // Removemos progress comun
-                    progressBar.classList.remove("bg-info");
-                    // Agregamos el progress de error
-                    progressBar.classList.add("bg-danger");
-                    // Ocultamos el alerta comun
-                    alertInfo.classList.add("d-none");
-                    alertInfo.classList.remove("d-block")
-                        // Mostramos el alerta de error
-                    alertFail.classList.remove("d-none");
-                    alertFail.classList.add("d-block");
-                    // Mostramos el boton de error
-                    retry.classList.remove("d-none");
-                    retry.classList.add("d-block");
-                }, 500);
-
-                // Encapsulamos codigos, nos permitirá reutilizarlo para validar si existe name_files
-                var defaultMessageFile = function() {
-                    // Colocamos la barra de progreso en su estado original
-                    progressBar.style.width = 0 + "%";
-                    progressBar.classList.remove("bg-danger");
-                    progressBar.classList.add("bg-info");
-                    // Ocultamos el boton
-                    retry.classList.remove("d-block");
-                    retry.classList.add("d-none");
-                    // Activamos el input nuevamente
-                    $(upload).prop('disabled', false);
-                    // Ocultamos el alert de error
-                    alertFail.classList.remove("d-block");
-                    alertFail.classList.add("d-none");
-                    // Mostramos el alert comun
-                    alertInfo.classList.remove("d-none");
-                    alertInfo.classList.add("d-block");
-                }
-
-                retry.addEventListener("click", () => {
-                    defaultMessageFile();
-                });
-            }
+            
 
             if (xhr.status == 200) {
-                // Parseamos a JSON la respuesta por parte del servidor
-                JSONResponse = JSON.parse(xhr.response);
-                $(upload).prop('disabled', true);
-                // Aplicamos timeout de 1 seg para que el cambio de color sea visible al usuario
-                setTimeout(function() {
-                    // Cambiamos el color de la barra de progreso a verde
-                    progressBar.classList.remove("bg-info");
-                    progressBar.classList.add("bg-success");
-                    // Ocultamos el alert comun
-                    alertInfo.classList.remove("d-block");
-                    alertInfo.classList.add("d-none");
-                    // Mostramos el alert que indica la subida de archivos con exito
-                    alertSuccess.classList.remove("d-none");
-                    alertSuccess.classList.add("d-block");
-                }, 1000);
-
-                if (xhr.response != undefined && context != undefined) {
-                    // Guardamos el valor del contexto una vez comprobado que es distinto de undefined
-                    contextValue = context.value;
-                    JSONContext = JSON.parse(contextValue);
-                    // Añadimos el array a una propiedad
-                    JSONContext.file_names = JSONResponse.filenames;
-                    // Parseamos a string y cambiamos el valor del contexto
-                    contextValue = JSON.stringify(JSONContext);
-                    // Preparamos los datos a enviar
-                    var obj = {
-                            message: "ok",
-                            context: contextValue
-                        }
-                        // Enviamos la solicitud al servidor   
-                    AjaxCall({
-                        url: CHATBOT_URL,
-                        method: CHATBOT_HTTPMETHOD,
-                        callback: RenderResponseMessage,
-                        data: obj,
-                        json: true
-                    });
-                }
+                
             }
         });
         xhr.send(formData);
@@ -703,13 +609,147 @@
         var description = currentMessage.querySelector("#description");
         var inputButton = currentMessage.querySelector("#upload");
         var submit = document.querySelector("#chat-submit");
+        // Capturamos la barra de progreso
+        let progressBar = currentMessage.querySelector("#progressBar");
+        // Capturamos elementos que reportaran si se sube el archivo o no
+        var alertFail = currentMessage.querySelector("#alertFail");
+        var alertSuccess = currentMessage.querySelector("#alertSuccess");
+        var alertInfo = currentMessage.querySelector("#alertInfo")
+        var upload = currentMessage.querySelector("#upload");
+        // Capturamos el boton de reintentar
+        var retry = currentMessage.querySelector("#retry");
+        var totalSize = 0;
+        currentMessage.uploadCallback = function(event) {
+            // A todo el valor lo redondeamos para tener un numero entero
+            let porcentaje = Math.round((event.loaded / event.total) * 100);
+            progressBar.style.width = porcentaje + "%";
+        }
+        currentMessage.defaultStyle = function (){
+            // Colocamos la barra de progreso en su estado original
+            progressBar.style.width = 0 + "%";
+            progressBar.classList.remove("bg-danger");
+            progressBar.classList.add("bg-info");
+            // Ocultamos el boton
+            retry.classList.remove("d-block");
+            retry.classList.add("d-none");
+            // Activamos el input nuevamente
+            $(upload).prop('disabled', false);
+            // Ocultamos el alert de error
+            alertFail.classList.remove("d-block");
+            alertFail.classList.add("d-none");
+            // Mostramos el alert comun
+            alertInfo.classList.remove("d-none");
+            alertInfo.classList.add("d-block");
+            // Ocultamos el alert succes
+            alertSuccess.classList.remove("d-block");
+            alertSuccess.classList.add("d-none");
+        }
 
-        $(submit).prop('disabled', false);
+        // Encapsulamos codigos, nos permitirá reutilizarlo para validar si existe name_files
+        currentMessage.alertStyle = function() {            
+            // Preparamos estilos para indicarle al usuario que los archivos no se pudieron subir
+            setTimeout(function() {
+                // Removemos progress comun
+                progressBar.classList.remove("bg-info");
+                // Agregamos el progress de error
+                progressBar.classList.add("bg-danger");
+                // Ocultamos el alerta comun
+                alertInfo.classList.add("d-none");
+                alertInfo.classList.remove("d-block")
+                    // Mostramos el alerta de error
+                alertFail.classList.remove("d-none");
+                alertFail.classList.add("d-block");
+                // Mostramos el boton de error
+                retry.classList.remove("d-none");
+                retry.classList.add("d-block");
+            }, 500);
+        }
+
+        currentMessage.successStyle = function (){
+            // Aplicamos timeout de 1 seg para que el cambio de color sea visible al usuario
+            setTimeout(function() {
+                // Cambiamos el color de la barra de progreso a verde
+                progressBar.classList.remove("bg-info");
+                progressBar.classList.add("bg-success");
+                // Ocultamos el alert comun
+                alertInfo.classList.remove("d-block");
+                alertInfo.classList.add("d-none");
+                // Mostramos el alert que indica la subida de archivos con exito
+                alertSuccess.classList.remove("d-none");
+                alertSuccess.classList.add("d-block");
+            }, 1000);
+        }        
+
+        currentMessage.successCallback = function(response) {
+            // Parseamos a JSON la respuesta por parte del servidor
+            JSONResponse = JSON.parse(response);
+            currentMessage.successStyle();
+            // Almacenamos el valor del contexto
+            let context = document.querySelector(CONTEXT_DATA);
+            let contextValue;
+
+            $(upload).prop('disabled', true);            
+
+            if (response != undefined && context != undefined) {
+                // Guardamos el valor del contexto una vez comprobado que es distinto de undefined
+                contextValue = context.value;
+                JSONContext = JSON.parse(contextValue);
+                // Añadimos el array a una propiedad
+                JSONContext.file_names = JSONResponse.filenames;
+                // Parseamos a string y cambiamos el valor del contexto
+                contextValue = JSON.stringify(JSONContext);
+                // Preparamos los datos a enviar
+                var obj = {
+                        message: "ok",
+                        context: contextValue
+                    }
+                    // Enviamos la solicitud al servidor   
+                AjaxCall({
+                    url: CHATBOT_URL,
+                    method: CHATBOT_HTTPMETHOD,
+                    callback: RenderResponseMessage,
+                    data: obj,
+                    json: true
+                });
+            }
+        }
+
+        $(submit).prop('disabled', false);        
 
         // Verificamos si algo cambia en el input
         inputButton.addEventListener('change', e => {
             let files = e.target.files;
-            uploadFile(files, currentMessage);
+            // Creamos el formdata para hacer envios
+            let data = new FormData();            
+            // Acumulamos de manera recursiva los archivos
+            for (let i = 0; i < files.length; i++) {
+                totalSize += files[i].size / 1024 / 1024;
+                data.append("upload_file[]", files[i]);
+            }
+
+            currentMessage.errorCallback = function(response) {
+                if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES) {
+                    progressBar.style.width = 50 + "%";
+                    // Vaciamos el array de files
+                    upload.value = "";
+                    // Eliminamos la posibilidad de volver a subir
+                    $(upload).prop('disabled', true);
+                    
+                    currentMessage.alertStyle();
+        
+                    retry.addEventListener("click", () => {
+                        currentMessage.defaultStyle();
+                    });
+                }
+            }
+            AjaxCall({
+                url:"/upload_documents",
+                method: "post", 
+                callback: currentMessage.successCallback, 
+                data: data, 
+                uploadCallback: currentMessage.uploadCallback, 
+                errorCallback: currentMessage.errorCallback 
+            })
         });
 
         response.innerHTML = "Por favor, adjuntá tus archivos"
