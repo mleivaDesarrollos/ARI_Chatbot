@@ -26,7 +26,6 @@
 
     var await_response_timeout_id, finish_message_timeout_id, reset_chatlog_timeout_id;
     var pending_delivering_messages = [];
-    var messagesChat;
     var indice = 0;
 
     var is_conversation_starting = false;
@@ -196,13 +195,18 @@
             if (JsonResp.context.clean_temporary_files) {
                 var chatLogs = document.querySelectorAll(".chat-msg");
                 console.log(chatLogs);
-                lastChat = chatLogs[chatLogs.length - 1];
-                anteLastChat = chatLogs[chatLogs.length - 2];
-                anteAnteLastChat = chatLogs[chatLogs.length - 3];
-                lastChat.parentNode.removeChild(lastChat);
-                anteLastChat.parentNode.removeChild(anteLastChat);
-                anteAnteLastChat.parentNode.removeChild(anteAnteLastChat);
+                // Ultimo
+                lastMessage = chatLogs[chatLogs.length - 1];
+                // Anteultimo
+                antenmousMessage = chatLogs[chatLogs.length - 2];
+                // Penultimo
+                penultimateMessage = chatLogs[chatLogs.length - 3];
 
+                lastMessage.parentNode.removeChild(lastMessage);
+                antenmousMessage.parentNode.removeChild(antenmousMessage);
+                delete JsonResp.context.clean_temporary_files;
+                // defaultMessageFile();
+                //anteAnteLastChat.parentNode.removeChild(anteAnteLastChat);
             }
         }
         // Iniciamos la distribución de mensajes acumulados
@@ -552,7 +556,6 @@
                 retry.addEventListener("click", () => {
                     defaultMessageFile();
                 });
-
             }
 
             if (xhr.status == 200) {
