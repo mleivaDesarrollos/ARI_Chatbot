@@ -137,7 +137,7 @@
             var await_time_ms = 900;
 
             if (length_message > 100) {
-                await_time_ms = 100;
+                await_time_ms = 500;
             }
 
             if (indice == 0) {
