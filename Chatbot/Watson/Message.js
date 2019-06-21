@@ -50,6 +50,10 @@ const CONTEXT_CONVERSATION_ID = "conversation_id";
 const CONTEXT_SYSTEM = "system";
 const CONTEXT_REQUEST = "is_request";
 
+const ARI_AUTOSTART_REQUEST = true;
+const ARI_AUTOSTART_TRIGGER_MESSAGE = "inicioAri";
+const ARI_USER_FILTER = "teco";
+
 var filter_message_by_type = function ({ message } = {}) {
     // Preparamos el mensaje de respuesta
     var return_message = {}
@@ -271,10 +275,6 @@ var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ 
         // Definimos un array de elementos que contendrá los equipos consultados
         var arrWorkstations = [];
         var arrOptions = [];
-        // // Cargamos la libreria de CMDB
-        // var CMDB = require('../../CMDB/CMDB');        
-        // // Almacenamos los equipos en el array
-        // await CMDB.GetByUser({ username: username }).then((workstation) => arrWorkstations = workstation);
         // Cargamos la librería de GLPI
         let GLPIClass = require('../../Ticket/GLPI');
         // Instanciamos un nuevo objeto GLPI
@@ -384,12 +384,22 @@ var CheckAndRestartChat = function({caller_context}){
 var getData = function (messageToConvert, context) {
     var body = {
         input: {
-            text: messageToConvert
+            text: String(messageToConvert)
         },
         context: context
     };
     // Devolvemos el string procesado y convertido a string
     return JSON.stringify(body);
+}
+
+// Validamos las condiciones para definir un mensaje de arranque automático
+let define_autostart_message = function({user_message, caller_context, username} = {}){
+    // Validamos las condiciones en las cuales se inicia la conversación automáticamente
+    if((user_message == '' || user_message == undefined) && caller_context == undefined && ARI_AUTOSTART_REQUEST && username.toLowerCase() == ARI_USER_FILTER) {                
+        // En caso de que el mensaje venga vacío y no haya contexto, y se haya establecido el inicio de la peticion
+        user_message = ARI_AUTOSTART_TRIGGER_MESSAGE;
+    }
+    return user_message;
 }
 
 // Función que manejaría la interacción con la ticketera, obteniendo un ticket en el proceso
@@ -410,14 +420,16 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
     this._fullname = param_fullname;
     this._auth = param_auth;
     // Método que controla los mensajes
-    this.message = function ({ userInput, context } = {}) {
+    this.message = function ({ userInput, context } = {}) {        
         // Configuramos el URI para poder realizar las consultas a la API
         const URI = "https://gateway.watsonplatform.net/assistant/api/v1/workspaces/" + this._workspace + "/message?version=" + this._version;
         // Definimos método        
         const METHOD = "POST";
         var promise = new Promise(async (resolve, reject) => {
-            // Validamos si el mensaje viene vacio
-            if (userInput != '' && userInput != undefined) {
+            // Definimos si el input se modifica en base a los parametros de inicio automatico
+            userInput = define_autostart_message({ user_message: userInput, caller_context: context, username: this._username });
+            // Validamos si el mensaje viene vacio o si preparamos para hacer autostart
+            if ((userInput != '' && userInput != undefined)) {
                 // Validamos si la solicitud viaja con la terminal
                 if (context != undefined) {                                        
                     // Validamos si el usuario está enviando las direcciones
@@ -433,7 +445,7 @@ module.exports = function ({ param_workspace, param_version, param_headers, para
                     // Validamos si la petición viene con errores
                     if (err) {
                         return reject("Error: Se ha producido un error al enviar mensaje: " + err);
-                    }
+                    }                    
                     // Parseamos la respuesta
                     watsonResponse = JSON.parse(watsonResponse);
                     // Si pasamos la fase de validación en primera instancia logueamos lo obtenido
