@@ -739,7 +739,7 @@ function GetWorkstations({session_token, user_id} ={}){
                     // En la respuesta de la API, en el Key viaja el ID de la computadora
                     Object.keys(computers_JSON.data).forEach(computer_id => {                        
                         // Agregamos la PC al listado de equipos
-                        computers_result.push({id: computer_id, name: computers_JSON.data[computer_id][COMPUTER_NAME_FIELD]});
+                        computers_result.push({id: computer_id, name: String(computers_JSON.data[computer_id][COMPUTER_NAME_FIELD])});
                     });
                 } // end if
                 // Resolvemos con el array
