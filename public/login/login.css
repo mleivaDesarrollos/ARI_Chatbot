@@ -31,6 +31,11 @@ body {
     box-shadow: 0 0.5rem 1rem 0 rgba(0, 0, 0, 0.1);
 }
 
+.card-img-top {
+    border-top-left-radius: 1em;
+    border-top-right-radius: 1em;
+}
+
 .card-signin .card-title {
     margin-bottom: 2rem;
     font-weight: 300;

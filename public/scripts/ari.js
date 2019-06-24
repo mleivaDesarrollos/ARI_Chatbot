@@ -39,8 +39,8 @@
     // Funcion encargada de disparar los eventos principales del chat
     var events = function() {
         // Desabilitamos el click derecho
-        // document.oncontextmenu = function(){return false;}
-        // Iniciar conversacion
+        document.oncontextmenu = function() { return false; }
+            // Iniciar conversacion
         startConversation();
         // Enviar mensaje
         $("#chat-submit").click(click_submit);
@@ -212,7 +212,7 @@
                 lastMessage.parentNode.removeChild(lastMessage);
                 antenmousMessage.parentNode.removeChild(antenmousMessage);
                 delete JsonResp.context.clean_temporary_files;
-
+                document.querySelector("#upload").value = null;
                 penultimateMessage.defaultStyle();
 
             }
@@ -488,30 +488,6 @@
         indice++;
     }
 
-    let uploadFile = function(files) {
-        let formData = new FormData();
-        let xhr = new XMLHttpRequest();
-
-
-        // Controlamos el progreso de la subida de archivo
-        xhr.upload.addEventListener("progress", (event) => {
-            // A todo el valor lo redondeamos para tener un numero entero
-            let porcentaje = Math.round((event.loaded / event.total) * 100);
-            progressBar.style.width = porcentaje + "%";
-        });
-
-        xhr.open('POST', '/upload_documents');
-        xhr.addEventListener('load', () => {
-            // Validamos tamaño, cantidad y resp del server
-
-
-            if (xhr.status == 200) {
-
-            }
-        });
-        xhr.send(formData);
-    }
-
     var linkDetect = function(message) {
         var newMessage;
         const originalString = message;
@@ -623,11 +599,15 @@
         // Capturamos el boton de reintentar
         var retry = currentMessage.querySelector("#retry");
         var totalSize = 0;
+
+
         currentMessage.uploadCallback = function(event) {
             // A todo el valor lo redondeamos para tener un numero entero
             let porcentaje = Math.round((event.loaded / event.total) * 100);
             progressBar.style.width = porcentaje + "%";
         }
+
+
         currentMessage.defaultStyle = function() {
             // Colocamos la barra de progreso en su estado original
             progressBar.style.width = 0 + "%";
@@ -649,7 +629,7 @@
             alertSuccess.classList.add("d-none");
         }
 
-        // Encapsulamos codigos, nos permitirá reutilizarlo para validar si existe name_files
+
         currentMessage.alertStyle = function() {
             // Preparamos estilos para indicarle al usuario que los archivos no se pudieron subir
             setTimeout(function() {
@@ -675,12 +655,14 @@
                 // Cambiamos el color de la barra de progreso a verde
                 progressBar.classList.remove("bg-info");
                 progressBar.classList.add("bg-success");
-                // Ocultamos el alert comun
-                alertInfo.classList.remove("d-block");
+                // Ocultamos el alerta comun
                 alertInfo.classList.add("d-none");
+                alertInfo.classList.remove("d-block");
                 // Mostramos el alert que indica la subida de archivos con exito
                 alertSuccess.classList.remove("d-none");
                 alertSuccess.classList.add("d-block");
+
+
             }, 1000);
         }
 
@@ -693,6 +675,8 @@
             let contextValue;
 
             $(upload).prop('disabled', true);
+
+            currentMessage.files = undefined;
 
             if (response != undefined && context != undefined) {
                 // Guardamos el valor del contexto una vez comprobado que es distinto de undefined
