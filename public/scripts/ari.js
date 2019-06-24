@@ -18,6 +18,9 @@
     const INTERVAL_FINISH_ACTIVITY = 99999999999;
     const INTERVAL_POST_FINISH_DELAY = 99999999999;
 
+    const CONTEXT_BLOCK_VARIANT_FOR_MENU_OPTION = "block_variant";
+    const MESSAGE_OTHER_OPTION = { description: "Tengo otra consulta", value: "otherOp" }
+
     // Variables que se utilizaran como recursos publicos
     var chat_msg_usuario;
     var chat_msg_bot;
@@ -200,8 +203,7 @@
             };
 
             if (JsonResp.context.clean_temporary_files) {
-                var chatLogs = document.querySelectorAll(".chat-msg");
-                console.log(chatLogs);
+                var chatLogs = document.querySelectorAll(".chat-msg");                
                 // Ultimo
                 lastMessage = chatLogs[chatLogs.length - 1];
                 // Anteultimo
@@ -439,8 +441,7 @@
         if (type == "usuario") {
             generate_message_usuario(msg);
             // Limpiamos el input
-            $("#chat-input").val('');
-            console.log(is_conversation_starting);
+            $("#chat-input").val('');            
             if (is_conversation_starting == false) {
                 // Deshabilitamos el envio de mensaje hasta que se reciba respuesta del bot
                 $("#chat-submit").prop('disabled', true);
@@ -531,6 +532,26 @@
         chat_logs.appendChild(currentMessage);
     }
 
+    // Corroboramos si el contexto comunicado tiene la variable para bloquear variantes
+    let check_variant_blocked_and_delete_property = function() {        
+        // Recolectamos el contexto
+        let context_input = document.querySelector(CONTEXT_DATA);
+        // Validamos si existe el contexto
+        if(context_input != undefined) {                
+            // Separamos el valor y lo parseamos
+            let context_value = JSON.parse(context_input.value);
+            let variant_blocked =  context_value.hasOwnProperty(CONTEXT_BLOCK_VARIANT_FOR_MENU_OPTION);
+            // Validamos si existe la propiedad
+            if(variant_blocked) {
+                // Una vez validado eliminamos la variable del contexto
+                delete context_value[CONTEXT_BLOCK_VARIANT_FOR_MENU_OPTION];
+                context_input.value = JSON.stringify(context_value);
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Inserta un nodo despues de otro
     function insertAfter(e, i) {
         if (e.nextSibling) {
@@ -553,10 +574,12 @@
         input.style.cursor = "no-drop";
         input.classList.add('disabled-input');
         submit.style.color = "lightgrey";
-
-        // Modificamos estilos
-        var other_option = { description: "Tengo otra consulta", value: "otherOp" }
-        message.options.push(other_option);
+        
+        // Validamos si este mensaje debe impedir variantes
+        if(check_variant_blocked_and_delete_property() == false){
+            // Agregamos la posiblidad de salir de las opciones elegidas
+            message.options.push(MESSAGE_OTHER_OPTION);
+        } 
 
         // Si el mensaje es de tipo opcion, sacamos foco del input
         question.innerHTML = message.text;
