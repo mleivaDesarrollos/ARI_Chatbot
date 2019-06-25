@@ -301,9 +301,14 @@ var CheckWorkstationRequirementAndRetrieveMessageWithWorkstationList = async ({ 
         message_with_workstations.options = arrOptions;
         // Empujamos el mensaje filtrado al arrMessages
         filtered_messages.push(message_with_workstations);
+        // Eliminamos la propiedad de requerimiento de máquina del contexto
+        delete caller_context[GET_WORKSTATION_NUMBER];
     }
     // Devolvemos el listado de mensajes procesados
-    return filtered_messages;
+    return {
+        context: caller_context,
+        messages: filtered_messages
+    };
 }
 
 var retrieveUserLocationListOnContextRequest = async({ caller_context, authorization, filtered_messages }) => {
