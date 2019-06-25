@@ -7,7 +7,7 @@ module.exports = function(){
     const MAX_UPLOAD_SIZE = 10485760;
     const MAX_UPLOAD_FILES = 5;
     const UPLOAD_PREFIX = "UPLOAD";
-    const UPLOAD_PATH = "./uploads";
+    const UPLOAD_PATH = "./Uploads";
     const UPLOAD_MULTIPLE_FIELD = "upload_file[]";
     const SUPPORTED_FORMATS = ['text/plain', 'image', 'spreadsheet', 'pdf', 'wordprocessing', 'msword', 'excel', 'powerpoint', 'presentation', 'octet-stream', 'zip']
     const BASE_ERROR_LOG_PREFIX = "ERROR - UploadModule - ";
@@ -36,24 +36,31 @@ module.exports = function(){
         return day + "-"+ month + "-" + year + "_" + hour + "-" + minute + "-" + seconds;
     }
     
-    // Leemos el contenido de la carpeta de subidas
-    fs.readdirSync(UPLOAD_PATH).forEach(file => {    
-        // Validamos que el archivo tenga de nombre UPLOAD + NUMERO
-        if(file.includes(UPLOAD_PREFIX)) {
-            try{
-                // Disponemos una expresión regular para obtener el numero de archivo
-                let rg_get_number = /\d{6}/gmi;                
-                // Removemos los componentes del nombre para dejar solo el número
-                let number = parseInt(file.match(rg_get_number), 10);
-                // Comparamos si el valor actual supera al valor guardado
-                if(number > upload_number){
-                    // Guardamos el valor máximo en la variable
-                    upload_number = number;
-                }
-            } catch (e){
-                console.log("Error obteniendo el proximo número de descarga " + e);
-            }
-    }});
+
+    try{
+        // Chequeamos la existencia de la carpeta uploads
+        if(fs.existsSync(UPLOAD_PATH)) {
+            // Leemos el contenido de la carpeta de subidas
+            fs.readdirSync(UPLOAD_PATH).forEach(file => {    
+                // Validamos que el archivo tenga de nombre UPLOAD + NUMERO
+                if(file.includes(UPLOAD_PREFIX)) {
+                    // Disponemos una expresión regular para obtener el numero de archivo
+                    let rg_get_number = /\d{6}/gmi;                
+                    // Removemos los componentes del nombre para dejar solo el número
+                    let number = parseInt(file.match(rg_get_number), 10);
+                    // Comparamos si el valor actual supera al valor guardado
+                    if(number > upload_number){
+                        // Guardamos el valor máximo en la variable
+                        upload_number = number;
+                    }
+            }});    
+        } else {
+            // Creamos la carpeta de manera sincrónica
+            fs.mkdirSync(UPLOAD_PATH);
+        }        
+    } catch(e) {
+        console.log("Error obteniendo el proximo número de descarga " + e);
+    }
     // Una vez localizado el número final de subida le incrementamos por uno
     upload_number++;
     
