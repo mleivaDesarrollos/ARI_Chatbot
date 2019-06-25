@@ -137,7 +137,6 @@ app.post('/send', (req, res) => {
 
 // Control de rutas para subidas de archivos
 app.post('/upload_documents', (req, res) => {
-    console.log("La concha de tu madre");
     // Utilizando la libreria Upload, gestionamos la solicitud de subida de archivos
     uploads.upload_multiple_and_return_filenames({ request: req, response: res }).then(
         file_names => {
