@@ -621,7 +621,6 @@
         var upload = currentMessage.querySelector("#upload");
         // Capturamos el boton de reintentar
         var retry = currentMessage.querySelector("#retry");
-        var totalSize = 0;
 
 
         currentMessage.uploadCallback = function(event) {
@@ -732,34 +731,36 @@
             let files = e.target.files;
             // Creamos el formdata para hacer envios
             let data = new FormData();
+            // Reinicializamos totalsize
+            let totalSize = 0;
             // Acumulamos de manera recursiva los archivos
             for (let i = 0; i < files.length; i++) {
-                totalSize += files[i].size / 1024 / 1024;
+                totalSize += files[i].size;
                 data.append("upload_file[]", files[i]);
             }
+                      
+            if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES) {
+                progressBar.style.width = 50 + "%";
 
-            currentMessage.errorCallback = function(response) {
-                if (files.length > MAXIMUM_NUMBER_OF_FILES || totalSize > MAXIMUM_SIZE_OF_FILES) {
-                    progressBar.style.width = 50 + "%";
-                    // Vaciamos el array de files
-                    upload.value = "";
-                    // Eliminamos la posibilidad de volver a subir
-                    $(upload).prop('disabled', true);
+                currentMessage.alertStyle();
+                // Vaciamos el array de files
+                upload.value = "";
+                // Eliminamos la posibilidad de volver a subir
+                $(upload).prop('disabled', true);
+                
 
-                    currentMessage.alertStyle();
+                retry.addEventListener("click", () => {
+                    currentMessage.defaultStyle();
+                });
 
-                    retry.addEventListener("click", () => {
-                        currentMessage.defaultStyle();
-                    });
-                }
+                return;
             }
             AjaxCall({
                 url: "/upload_documents",
                 method: "post",
                 callback: currentMessage.successCallback,
                 data: data,
-                uploadCallback: currentMessage.uploadCallback,
-                errorCallback: currentMessage.errorCallback
+                uploadCallback: currentMessage.uploadCallback
             })
         });
 
